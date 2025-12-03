@@ -54,7 +54,7 @@ export const StyledCloseButton = styled(IconButton)(({ theme, bgcolor }) => ({
 const Modal = ({ open, printVisible=false, newVisible=false,
                    title, handleClose, handleConfirmation, handlePrint, handleNew,
                    children, actionVisible =true, actionDisabled, actionLabel, width,
-                   titleBgColor, printButtonColor, zIndex = 1300, headerContent}) => {
+                   titleBgColor, printButtonColor, zIndex = 1300, headerContent, actions}) => {
     return (
         <StyledDialog aria-labelledby="customized-dialog-title" open={open} maxWidth={width || 'sm'} fullWidth bgcolor={titleBgColor}>
             <StyledDialogTitle bgcolor={titleBgColor}>
@@ -85,33 +85,39 @@ const Modal = ({ open, printVisible=false, newVisible=false,
                     </Grid>
                 </Grid>
             </DialogContent>
-            {actionVisible &&
+            {(actions || actionVisible) && (
                 <DialogActions>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
-                        {printVisible && (
-                            <Tooltip placement="top" title="Imprimer">
-                                <IconButton color={printButtonColor} aria-label="Print" size="large" onClick={handlePrint}>
-                                    <PrintIcon sx={{ fontSize: '2rem' }} />
-                                </IconButton>
-                            </Tooltip>
-                        )}
-                        {newVisible && (
-                            <Tooltip placement="top" title="Nouveau">
-                                <IconButton aria-label="New" size="large" onClick={handleNew}>
-                                    <AddBoxIcon sx={{ fontSize: '2rem' }} />
-                                </IconButton>
-                            </Tooltip>
-                        )}
-                    </Box>
-                    <CustomAlertDialog
-                        actionVisible={actionVisible}
-                        actionDisabled={actionDisabled}
-                        openLabel={actionLabel || 'Enregistrer'}
-                        handleConfirmation={handleConfirmation}
-                        TriggerIcon={<SaveIcon sx={{ fontSize: '2rem' }} />}
-                    />
+                    {actions ? (
+                        actions
+                    ) : (
+                        <>
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
+                                {printVisible && (
+                                    <Tooltip placement="top" title="Imprimer">
+                                        <IconButton color={printButtonColor} aria-label="Print" size="large" onClick={handlePrint}>
+                                            <PrintIcon sx={{ fontSize: '2rem' }} />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                                {newVisible && (
+                                    <Tooltip placement="top" title="Nouveau">
+                                        <IconButton aria-label="New" size="large" onClick={handleNew}>
+                                            <AddBoxIcon sx={{ fontSize: '2rem' }} />
+                                        </IconButton>
+                                    </Tooltip>
+                                )}
+                            </Box>
+                            <CustomAlertDialog
+                                actionVisible={actionVisible}
+                                actionDisabled={actionDisabled}
+                                openLabel={actionLabel || 'Enregistrer'}
+                                handleConfirmation={handleConfirmation}
+                                TriggerIcon={<SaveIcon sx={{ fontSize: '2rem' }} />}
+                            />
+                        </>
+                    )}
                 </DialogActions>
-            }
+            )}
         </StyledDialog>
     );
 };
@@ -130,6 +136,7 @@ Modal.propTypes = {
     titleBgColor: PropTypes.string, // Prop pour la couleur de fond de la zone de titre
     handlePrint: PropTypes.func,
     headerContent: PropTypes.node, // Custom content to display in the header
+    actions: PropTypes.node, // Custom actions content to render inside DialogActions
 };
 
 export default Modal;

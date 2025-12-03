@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -25,6 +26,7 @@ import Pagination from '../../../components/commons/Pagination';
 import FloatingAlert from '../../../components/commons/FloatingAlert';
 import AssociationModal from './AssociationModal';
 import CotisationModal from '../cotisations/CotisationModal';
+import { useSearchAssociations } from '../../../hooks/query/useAssociations';
 
 // assets
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -34,9 +36,9 @@ import { IconCoin } from '@tabler/icons-react';
 
 const AssociationsList = ({ searchTerm }) => {
     const theme = useTheme();
+    const navigate = useNavigate();
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
-    const [loading, setLoading] = useState(false);
 
     // State for alerts
     const [alertOpen, setAlertOpen] = useState(false);
@@ -53,72 +55,12 @@ const AssociationsList = ({ searchTerm }) => {
     // State for cotisation modal
     const [openCotisationModal, setOpenCotisationModal] = useState(false);
 
-    // Mock data for associations
-    const [associationsData, setAssociationsData] = useState({
-        content: [
-            {
-                id: 1,
-                name: 'Mutuelle des Agents des Finances Générales',
-                acronym: 'MAFIB',
-                location: 'Abidjan/Plateau/Cité Financière',
-                membershipFee: 10000,
-                logo: null
-            },
-            {
-                id: 2,
-                name: 'Syndicat des Agents des Finances Générales',
-                acronym: 'SYNAFIG',
-                location: 'Abidjan/Plateau/Cité Financière',
-                membershipFee: 15000,
-                logo: null
-            }
-        ],
-        totalPages: 1,
-        totalElements: 2
+    // Fetch associations via API search
+    const { data: associationsData, isLoading } = useSearchAssociations({
+        key: searchTerm || '',
+        page,
+        size: pageSize,
     });
-
-    // Filter associations based on search term
-    useEffect(() => {
-        if (searchTerm) {
-            const filteredContent = associationsData.content.filter(
-                association => 
-                    association.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    association.acronym.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    association.location.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-
-            setAssociationsData({
-                ...associationsData,
-                content: filteredContent,
-                totalElements: filteredContent.length,
-                totalPages: Math.ceil(filteredContent.length / pageSize)
-            });
-        } else {
-            // Reset to original data
-            setAssociationsData({
-                content: [
-                    {
-                        id: 1,
-                        name: 'Mutuelle des Agents des Finances Générales',
-                        acronym: 'MAFIB',
-                        location: 'Abidjan/Plateau/Cité Financière',
-                        membershipFee: 10000,
-                        logo: null
-                    },
-                    {
-                        id: 2,
-                        name: 'Syndicat des Agents des Finances Générales',
-                        acronym: 'SYNAFIG',
-                        location: 'Abidjan/Plateau/Cité Financière',
-                        membershipFee: 15000,
-                        logo: null
-                    }
-                ],
-                totalPages: 1,
-                totalElements: 2
-            });
-        }
-    }, [searchTerm, pageSize]);
 
     // Handle page change
     const handlePageChange = (newPage) => {
@@ -154,9 +96,29 @@ const AssociationsList = ({ searchTerm }) => {
                 setOpenCotisationModal(true);
                 // Don't close the menu yet for cotisation action to keep selectedAssociation available
                 setAnchorEl(null); // Just hide the menu without clearing selectedAssociation
+            } else if (action === 'details') {
+                // Navigate to the details tab of the association details page
+                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 0 } });
+                handleActionMenuClose();
+            } else if (action === 'sections-list') {
+                // Navigate to the sections tab of the association details page
+                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 1 } });
+                handleActionMenuClose();
+            } else if (action === 'members-list') {
+                // Navigate to the members tab of the association details page
+                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 2 } });
+                handleActionMenuClose();
+            } else if (action === 'membership-requests') {
+                // Navigate to the membership requests tab of the association details page
+                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 3 } });
+                handleActionMenuClose();
+            } else if (action === 'cotisations-list') {
+                // Navigate to the cotisations tab of the association details page
+                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 4 } });
+                handleActionMenuClose();
             } else {
                 // Here you would implement the other actions
-                setAlertMessage(`Action "${action}" sur ${selectedAssociation.name}`);
+                setAlertMessage(`Action "${action}" sur ${selectedAssociation.assoName}`);
                 setAlertSeverity('info');
                 setAlertOpen(true);
                 handleActionMenuClose(); // Close menu and clear selectedAssociation for other actions
@@ -204,7 +166,7 @@ const AssociationsList = ({ searchTerm }) => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {loading ? (
+                        {isLoading ? (
                             <TableRow>
                                 <TableCell colSpan={7} align="center">
                                     <CircularProgress color="primary" />
@@ -212,25 +174,25 @@ const AssociationsList = ({ searchTerm }) => {
                             </TableRow>
                         ) : associationsData?.content?.length > 0 ? (
                             associationsData.content.map((association) => (
-                                <TableRow key={association.id}>
-                                    <TableCell>{association.id}</TableCell>
+                                <TableRow key={association.assoId}>
+                                    <TableCell>{association.assoId}</TableCell>
                                     <TableCell>
-                                        <Typography variant="subtitle1">{association.name}</Typography>
+                                        <Typography variant="subtitle1">{association.assoName}</Typography>
                                     </TableCell>
-                                    <TableCell>{association.acronym}</TableCell>
-                                    <TableCell>{association.location}</TableCell>
+                                    <TableCell>{association.sigle}</TableCell>
+                                    <TableCell>{association.situationGeo}</TableCell>
                                     <TableCell>
                                         <Stack direction="row" alignItems="center" spacing={1}>
                                             <IconCoin size="1rem" />
-                                            <Typography>{formatCurrency(association.membershipFee)}</Typography>
+                                            <Typography>{formatCurrency(association.droitAdhesion || 0)}</Typography>
                                         </Stack>
                                     </TableCell>
                                     <TableCell>
                                         {association.logo ? (
-                                            <Avatar src={association.logo} alt={association.name} sx={{ width: 40, height: 40 }} />
+                                            <Avatar src={`data:image/png;base64,${association.logo}`} alt={association.assoName} sx={{ width: 40, height: 40 }} />
                                         ) : (
                                             <Avatar sx={{ width: 40, height: 40, bgcolor: theme.palette.primary.light }}>
-                                                {association.acronym.charAt(0)}
+                                                {association.sigle?.charAt(0) || association.assoName?.charAt(0) || '?'}
                                             </Avatar>
                                         )}
                                     </TableCell>
@@ -287,7 +249,8 @@ const AssociationsList = ({ searchTerm }) => {
                 <MenuItem onClick={() => handleActionClick('add-contribution')}>Ajouter une cotisation</MenuItem>
                 <MenuItem onClick={() => handleActionClick('sections-list')}>Liste des sections</MenuItem>
                 <MenuItem onClick={() => handleActionClick('members-list')}>Liste des membres</MenuItem>
-                <MenuItem onClick={() => handleActionClick('membership-requests')}>Demandes d'adhésion</MenuItem>
+                <MenuItem onClick={() => handleActionClick('membership-requests')}>Liste des demandes d'adhésion</MenuItem>
+                <MenuItem onClick={() => handleActionClick('cotisations-list')}>Liste des cotisations</MenuItem>
                 <MenuItem onClick={() => handleActionClick('edit-membership-form')}>Éditer la fiche d'adhésion</MenuItem>
             </Menu>
 

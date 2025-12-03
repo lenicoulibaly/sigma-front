@@ -1,0 +1,93 @@
+Génère dans le dossier src/sigma/hooks/query/, un fichier unique nommé useSections.js.
+
+Ce hook doit regrouper toutes les opérations du SectionController Spring Boot suivant :
+
+@PostMapping("/create") public ReadSectionDTO createSection(@RequestBody CreateSectionDTO dto)
+@PutMapping("/update") public ReadSectionDTO updateSection(@RequestBody UpdateSectionDTO dto)
+@GetMapping("/search") public Page<ReadSectionDTO> searchSections(@RequestParam(value = "key", defaultValue = "", required = false) String key,
+                                          @RequestParam(value = "assoId", required = false) Long assoId,
+                                          @RequestParam(value = "strId", required = false) Long strId,
+                                          @RequestParam(value = "page", defaultValue = "0", required = false) int page,
+                                          @RequestParam(value = "size", defaultValue = "10", required = false) int size)
+@GetMapping("/find-by-asso/{assoId}") public List<ReadSectionDTO> getAssociationSections(@PathVariable("assoId") Long assoId)
+
+⚙️ Spécifications techniques
+
+Utiliser React Query (ou la librairie standard du projet) pour gérer les requêtes useQuery et useMutation.
+
+Respecter la structure, les conventions déjà utilisés dans les autres hooks du dossier src/sigma/hooks/query/
+
+Chaque méthode doit être clairement exposée depuis le hook principal useSections, par exemple :
+
+Bien typer les entrées et sorties selon les DTO fournis :
+
+CreateSectionDTO et UpdateSectionDTO → en entrée pour les mutations
+
+ReadSectionDTO → en sortie pour les queries et mutations
+
+Gérer les paramètres de pagination (page, size, key, assoId, strId) pour searchSections.
+
+Structurer le code de façon claire, réutilisable et cohérente.
+
+voici les dtos utilisé :
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class ReadSectionDTO
+{
+    private Long sectionId;
+    private String sectionName;
+    private String situationGeo;
+    private String sigle;
+    private Long assoId;
+    private String assoName;
+    private String strName;
+    private String strSigle;
+    private String id;
+    private String label;
+    private String email;
+    private String tel;
+    private String adresse;
+
+    public ReadSectionDTO(Long sectionId, String sectionName, String situationGeo, String sigle, Long assoId, String assoName) {
+        this.sectionId = sectionId;
+        this.sectionName = sectionName;
+        this.situationGeo = situationGeo;
+        this.sigle = sigle;
+        this.assoId = assoId;
+        this.assoName = assoName;
+        this.id = String.valueOf(sectionId);
+        this.label = sectionName;
+    }
+}
+
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+public class UpdateSectionDTO
+{
+    private Long sectionId;
+    private String sectionName;
+    private String situationGeo;
+    private String sigle;
+    @ExistingStrId
+    private Long strId;
+    private String email;
+    private String tel;
+    private String adresse;
+}
+
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@UniqueSectionName
+public class CreateSectionDTO
+{
+    @NotNull(message = "Le nom de la section est obligatoire")
+    @NotBlank(message = "Le nom de la section est obligatoire")
+    private String sectionName;
+    private String sigle;
+    @ExistingAssoId
+    @NotNull(message = "Veuillez selectionner l'association")
+    private Long assoId;
+    @ExistingStrId
+    private Long strId;
+    private String situationGeo;
+    private String email;
+    private String tel;
+    private String adresse;
+}

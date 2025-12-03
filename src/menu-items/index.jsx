@@ -24,6 +24,11 @@ pages.hidden = true;
 utilities.hidden = true;
 support.hidden = true;
 other.hidden = true;
+associations.hidden = false;
+projects.hidden = true;
+immobilier.hidden = true;
+comptabilite.hidden = true;
+
 
 const menuItems = {
     items: [dashboard, application, associations, projects, immobilier, comptabilite, administration, forms, elements, samplePage, pages, utilities, support, other]

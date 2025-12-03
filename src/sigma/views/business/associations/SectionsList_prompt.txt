@@ -1,0 +1,58 @@
+Contexte :
+Crée une page React pour lister les sections de l'association de l'utilisateur connecté à partir de la maquette fournie (ListeSections.PNG).
+Cette page doit être intégrée parfaitement au template actuel du projet, en respectant le thème, les couleurs, la typographie, les espacements, et les composants UI déjà utilisés.
+Inspire-toi directement du composant existant : src/sigma/views/business/associations/AssociationsList.jsx
+l'identifiant de l'association de l'utilisateur connecté doit se recupérer de le claim 'assoId' du jwt de l'uilisateur.
+Mais pour l'instant ce claim n'est pas encore disponible dans le jwt. Tu peux considérer que assoId = 1  pour l'utilisateur connecté.
+Utilise la méthode useSearchSections de src/sigma/hooks/query/useSections.js
+
+🎯 Objectif
+Créer le composant :
+src/sigma/views/business/sections/SectionsList.jsx
+Ce composant affiche la liste des sections de l'association de l'utilisateur connecté avec :
+Barre de recherche
+
+Tableau de données avec colonnes :
+
+N°
+Nom
+Structure
+Situation géographique
+email
+teléphone
+Actions
+
+Pagination en bas de page
+Bouton “+” (ajout d’une nouvelle section) aligné à droite au-dessus du tableau
+Menu d’actions (voir la maquette) : “Détails”, “Modifier”, “Liste des membres”
+
+🧩 Contraintes techniques et stylistiques
+Réutiliser les composants communs du projet (boutons, tables, menus, pagination, etc.).
+Respecter les styles et couleurs du thème global.
+Le tableau doit être réutilisable
+Le bouton d’ajout doit utiliser le composant d’icône et bouton standard du template.
+Les données doivent être récupérées dynamiquement via useSearchSections de src/sigma/hooks/query/useSections.js
+Prévoir sur chaque section, les actions du menu (“Détails”, “Modifier”, “Liste des membres”).
+
+🧭 Intégration dans la navigation
+Le sous-menu “Sections” du menu “Associations” de la sidebar doit pointer vers cette page.
+
+🔄 Réutilisation
+Le composant SectionsList doit aussi être intégré dans l’onglet “Liste des sections” de la page :
+src/sigma/views/business/associations/AssociationDetails.jsx
+
+Cet onglet doit simplement importer et utiliser <SectionsList />.
+voici les champs du dto du détail de la section:
+    private Long sectionId;
+    private String sectionName;
+    private String situationGeo;
+    private String sigle;
+    private Long assoId;
+    private String assoName;
+    private String strName;
+    private String strSigle;
+    private String id;
+    private String label;
+    private String email;
+    private String tel;
+    private String adresse;

@@ -35,7 +35,7 @@ export default function CustomAlertDialog({
     message,
     actionDisabled = true,
     actionVisible = true,
-    type = 'submit',
+    type = 'button',
     confirmLabel,
     cancelLabel,
     handleConfirmation,

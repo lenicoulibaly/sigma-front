@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 // material-ui
 import Divider from '@mui/material/Divider';
@@ -11,6 +12,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import AuthWrapper1 from '../AuthWrapper1';
 import AuthCardWrapper from '../AuthCardWrapper';
 import AuthLogin from '../auth-forms/AuthLogin';
+import RegisterUserWizard from 'src/sigma/views/business/adhesions/RegisterUserWizard';
 import Logo from 'ui-component/Logo';
 import AuthFooter from 'ui-component/cards/AuthFooter';
 import useAuth from 'src/sigma/hooks/useAuth';
@@ -22,9 +24,20 @@ import useAuth from 'src/sigma/hooks/useAuth';
 const Login = () => {
     const { isLoggedIn } = useAuth();
     const downMD = useMediaQuery((theme) => theme.breakpoints.down('md'));
+    const [openRegisterModal, setOpenRegisterModal] = useState(false);
+
+    const handleOpenRegisterModal = () => {
+        setOpenRegisterModal(true);
+    };
+
+    const handleCloseRegisterModal = () => {
+        setOpenRegisterModal(false);
+    };
 
     return (
         <AuthWrapper1>
+            {/* Register User Wizard */}
+            <RegisterUserWizard open={openRegisterModal} handleClose={handleCloseRegisterModal} />
             <Grid container direction="column" justifyContent="flex-end" sx={{ minHeight: '100vh' }}>
                 <Grid item xs={12}>
                     <Grid container justifyContent="center" alignItems="center" sx={{ minHeight: 'calc(100vh - 68px)' }}>
@@ -52,7 +65,7 @@ const Login = () => {
                                                         textAlign="center"
                                                         sx={{ maxWidth: '100%' }}
                                                     >
-                                                        Bien venu sur la plateforme e-courrier
+                                                        Bien venu sur la plateforme SIGMA
                                                     </Typography>
                                                     <Typography
                                                         variant="caption"
@@ -66,7 +79,7 @@ const Login = () => {
                                         </Grid>
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <AuthLogin />
+                                        <AuthLogin loginProp={{ onCreateAccount: handleOpenRegisterModal }} />
                                     </Grid>
                                     <Grid item xs={12}>
                                         <Divider />

@@ -1,0 +1,115 @@
+Contexte projet :
+Tu travailles sur un projet React utilisant le template Berry fait avec Material UI de react. Le design doit respecter le thème global du projet : couleurs, typographie et composants personnalisés (Card, Tabs, DataTable, Button, etc.).
+
+Objectif :
+Crée une nouvelle page “AssociationDetails.jsx” dans src/sigma/views/business/associations/.
+Cette page doit afficher les détails d’une association avec un système de tabulation reprenant les sections suivantes :
+
+Détails
+
+Liste des Sections
+
+Liste des membres
+
+Liste des demandes d’adhésion
+
+Liste des cotisations
+
+Seul l’onglet Détails est pour l’instant développé (comme sur l’image src/sigma/views/business/associations/TabDetailsAssociation.PNG). Les autres onglets seront ajoutés plus tard mais doivent déjà être présents et prêts à accueillir des composants réutilisables.
+
+Spécifications de l’onglet “Détails” :
+
+Titre de section : “Informations générales”
+
+Afficher les champs suivants sous forme de grille ou de tableau lisible :
+
+Nom : Syndicat des Agents des Finances Générales
+
+Sigle : SYNAFIG
+
+Situation géo : Abidjan/Plateau
+
+Droit d’adhésion : 0 FCFA
+
+Structures : DGMP, DGBF
+
+Logo : Image du logo (affiche un composant ImagePreview ou Avatar du template)
+
+Nombre de membres : 150
+
+Sous-section “Conditions d’adhésion” : un Card contenant un texte enrichi (comme sur l’image).
+
+Sous-section “Liste des pièces à fournir” :
+
+Utilise un composant DataTable réutilisable (déjà utilisé ailleurs dans le projet si possible).
+
+Colonnes : N°, Type de pièce, Statut, Description.
+
+Données du tableau (pour l’instant) :
+
+Certificat de prise de service – Obligatoire – Votre dernier certificat de prise de service
+
+Bulletin de solde – Obligatoire – Votre dernier bulletin de solde
+
+Mise en page : deux colonnes (informations générales à gauche, conditions + liste à droite) sur écrans larges, empilement vertical sur petits écrans.
+
+Comportement & navigation :
+
+Les onglets doivent être contrôlés par un composant Tabs réutilisable.
+
+Chaque contenu d’onglet doit être rendu par un composant dédié.
+Ces composants seront réutilisés pour le menu général(Ces même composants seviront pour des pages indépendantes qu'on developpera plutard pour la liste des sections, la listes des cotisations, la liste des membres).
+
+Les composants doivent être autonomes et réutilisables.
+
+Intégration avec la liste des associations :
+
+Dans src/sigma/views/business/associations/AssociationsList.jsx, les boutons d’action (voir, modifier, gérer cotisations, etc.) doivent naviguer vers la page AssociationDetails.jsx avec l’onglet correspondant ouvert par défaut.
+Exemple :
+
+Bouton “Détails” → ouvre onglet “Détails”
+
+Bouton “Liste des sections” → ouvre onglet “Liste des Sections”
+
+Bouton “Liste des membres” → ouvre onglet “Liste des membres”
+
+Bouton “Liste des demandes d'adhésion” → ouvre onglet “Liste des demandes d’adhésion”
+
+Bouton “Liste des cotisations” → ouvre onglet “Liste des cotisations”
+
+Contraintes techniques :
+
+Utiliser le thème global (couleurs, polices, marges, radius, ombres).
+
+Code propre, clair.
+
+Les composants doivent être responsive et respecter la grille du template.
+
+Prévoir la possibilité de charger dynamiquement les données d’une API dans un futur proche.
+
+Utiliser des hooks personnalisés.
+
+voici les champs du DTO de detailsAssociation :
+
+    private Long assoId;
+    private String assoName;
+    private String situationGeo;
+    private String sigle;
+    private BigDecimal droitAdhesion;
+    private String email;
+    private String tel;
+    private String adresse;
+    private String logo;
+    private Long nbrMembres;
+    private String structures;
+    private String conditionsAdhesion;
+    private List<TypeDTO> piecesAFournir;
+
+Voici les champ de TypeDTO :
+
+    private String code;
+    private String name;//-->pour la colonne 'Type de pièce'
+    private Long ordre;
+    private String groupCode;
+    private String description;//-->pour la colonne 'description'
+    private String statut;//-->pour la colonne 'statut'

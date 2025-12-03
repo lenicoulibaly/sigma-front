@@ -306,9 +306,11 @@ const UserProfiles = () => {
         <MainCard 
             title={
                 <Stack direction="row" alignItems="center" spacing={1}>
-                    <IconButton onClick={handleBack} size="small">
-                        <ArrowBackIcon />
-                    </IconButton>
+                    <Tooltip title="Retour à la liste des utilisateurs">
+                        <IconButton onClick={handleBack} size="small">
+                            <ArrowBackIcon />
+                        </IconButton>
+                    </Tooltip>
                     <Typography variant="h3">
                         {pageTitle}
                     </Typography>

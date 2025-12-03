@@ -1,0 +1,47 @@
+Je veux créer un process d'inscription dans lequel un utilisateur peut s'inscrire
+suivant deux steps. Un step dans lequel il doit renseigner ses informations personnelles et professionnelles,
+un step pour son une association et ajouter des pièces jointes. Voici les DTO relatifs aux deux steps.
+
+Conçois pour moi interfaces graphiques de cette fonctionnalité en restant dans l'esprit du template du projet.
+Tu peux t'inspirer de src/sigma/views/business/associations/AssociationModal.jsx dans lequel nous avons implémenté
+la logique de création d'une association en 3 stetps'
+
+public class UserDTO
+{
+    private Long userId;
+    private String email;
+    private String matricule;
+    @ExistingGradeCode(message = "Grade inconnu", groups = {CreateGroup.class, UpdateGroup.class}, allowNull = true)
+    private String gradeCode;
+    @NotNull(message = "Le prénom ne peut pas être nul", groups = {CreateGroup.class, UpdateGroup.class})
+    private String firstName;
+    @NotNull(message = "Le nom de famille ne peut pas être nul", groups = {CreateGroup.class, UpdateGroup.class})
+    private String lastName;
+    @NotNull(message = "Le numéro de téléphone ne peut pas être nul", groups = {CreateGroup.class, UpdateGroup.class})
+    @UniqueTel(message = "Le numéro de téléphone est déjà utilisé", groups = {CreateGroup.class})
+    private String tel;
+
+    @ExistingStrId(allowNull = true, groups = {CreateGroup.class, UpdateGroup.class})
+    private Long strId;
+
+    private String adresse;
+    private String lieuNaissance;
+    private LocalDate dateNaissance;
+    private String emploiCode;
+    private String emploiName;
+    private LocalDate datePremierePriseService;
+    private Long assoId;
+    private List<UploadDocReq> documents;
+}
+
+public class UploadDocReq
+{
+    private Long objectId; //Peut être l'id d'un utilisateur, d'une association, d'une section, ou d'un autre objet futur quand le projet grandira
+    @ValidDocType
+    private String docTypeCode;
+    private String docNum;
+    private String docName;
+    private String docDescription;
+    private MultipartFile file;
+    private String objectTableName;
+}

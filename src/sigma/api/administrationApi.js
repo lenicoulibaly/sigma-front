@@ -18,7 +18,7 @@ export const userApi = {
 
     // CRUD Utilisateurs
     createUser: async (userData) => {
-        const response = await apiClient.post('/users/create', userData);
+        const response = await apiClient.post('/users/open/create', userData);
         return response.data;
     },
     createUserWithProfile: async (userData) => {
@@ -253,7 +253,12 @@ export const structureApi = {
         return response.data;
     },
 
-
+    // Endpoint public de recherche simple (liste)
+    searchOpenStructures: async (params = {}) => {
+        const queryString = qs.stringify(params, { arrayFormat: 'repeat' });
+        const response = await apiClient.get(`/structures/open/search-list?${queryString}`);
+        return response.data;
+    },
 
     // Gestion anchor (ancrage)
     getChangeAnchorDto: async (strId) => {

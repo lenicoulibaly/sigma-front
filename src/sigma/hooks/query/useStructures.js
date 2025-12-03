@@ -13,6 +13,7 @@ const STRUCTURES_KEYS = {
     changeAnchorDto: (id) => [...STRUCTURES_KEYS.all, 'changeAnchorDto', id],
     updateDto: (id) => [...STRUCTURES_KEYS.all, 'updateDto', id],
     visible: () => [...STRUCTURES_KEYS.all, 'visible'],
+    openSearch: (params) => [...STRUCTURES_KEYS.all, 'openSearch', { ...params }],
 };
 
 // Hooks for fetching structures
@@ -57,6 +58,14 @@ export const useVisibleStructures = () => {
     return useQuery({
         queryKey: STRUCTURES_KEYS.visible(),
         queryFn: () => structureApi.getVisibleStructures(),
+    });
+};
+
+export const useOpenStructuresSearch = (params = {}) => {
+    return useQuery({
+        queryKey: STRUCTURES_KEYS.openSearch(params),
+        queryFn: () => structureApi.searchOpenStructures(params),
+        enabled: !!(params && typeof params.key === 'string' && params.key.trim().length > 0),
     });
 };
 

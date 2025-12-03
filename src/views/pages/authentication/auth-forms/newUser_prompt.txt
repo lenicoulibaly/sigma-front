@@ -1,0 +1,93 @@
+
+🎯 Objectif
+Intégrer une fenêtre modale d’enregistrement d’un utilisateur accessible depuis la page de login de l’application.
+Sous le bouton login du composant src/views/pages/authentication/auth-forms/AuthLogin.jsx
+🧩 Détails fonctionnels
+
+Bouton sur la page de login
+
+Texte du bouton : "Créer un compte".
+
+Position : Sous le bouton login du composant src/views/pages/authentication/auth-forms/AuthLogin.jsx
+
+Style : conforme au thème
+
+Comportement
+
+Au clic sur le bouton, ouvrir une fenêtre modale contenant le formulaire d’enregistrement complet.
+
+Structure du formulaire
+
+Deux sections :
+
+🧍 Informations personnelles
+
+💼 Informations professionnelles
+
+Champs selon l’image fournie :
+
+Informations personnelles (3 rows):
+row1 :
+- Nom
+- Prénom
+row 2 :
+- Date de naissance (sélecteur de date)
+- Lieu de naissance
+row 3 :
+- Téléphone
+- Email
+- Adresse
+
+Informations professionnelles (2 rows):
+row 1 :
+- Matricule (champ texte ou upload)
+- Emploi : liste déroulante (autocomplete monooselect)
+- Grade : liste déroulante (autocomplete monooselect)
+row 2 :
+- Structure : liste déroulante (autocomplete monooselect)
+- Première prise de service (date)
+
+
+Boutons en bas de la modal
+
+Respecter les couleurs et le style du thème global.
+
+🧱 Contraintes techniques
+
+Utiliser les composants UI existants du projet (ex : Material-UI, Modal, ...).
+
+Respecter le système de thème et la palette de couleurs définie par le template.
+
+Le formulaire doit être responsive et clair .
+
+Chaque champ doit avoir une validation de base (ex : champ obligatoire, email valide).
+
+Préparer la structure pour une future soumission vers une API (/users/open/create).
+tu_ peux donc utiliser useCreateUser de src/sigma/hooks/query/useUsers.js
+
+Voici les champs du DTO (Certains ne sont pas utilisé ici:
+    private Long userId;
+    private String email;
+    private String matricule;
+    private String gradeCode;
+    private String firstName;
+    private String lastName;
+    private String tel;
+    private String password;
+    private String rePassword;
+    private String oldPassword;
+    private String authToken;
+    private LocalDate changePasswordDate;
+    private boolean activated = false;
+    private boolean notBlocked = true;
+    private LocalDateTime lastLogin;
+    private Long strId;
+    private String strName;
+    private String strSigle;
+    private String chaineSigles;
+    private String adresse;
+    private String lieuNaissance;
+    private LocalDate dateNaissance;
+    private String emploiCode;
+    private String emploiName;
+    private LocalDate datePremierePriseService;

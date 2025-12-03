@@ -25,7 +25,7 @@ const associations = {
             title: 'Associations',
             type: 'item',
             icon: icons.IconBuildingCommunity,
-            url: '/associations/list',
+            url: '/business/associations/list',
             tooltip: 'Gestion des associations'
         },
         {

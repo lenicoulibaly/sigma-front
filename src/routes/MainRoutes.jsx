@@ -19,6 +19,8 @@ const UserProfiles = Loadable(lazy(() => import('src/sigma/views/administration/
 
 // sigma business routing
 const AssociationsManagement = Loadable(lazy(() => import('src/sigma/views/business/associations')));
+const AssociationDetails = Loadable(lazy(() => import('src/sigma/views/business/associations/AssociationDetails')));
+const SectionsManagement = Loadable(lazy(() => import('src/sigma/views/business/sections')));
 
 // dashboard routing
 const DashboardDefault = Loadable(lazy(() => import('views/dashboard/Default')));
@@ -735,8 +737,16 @@ const MainRoutes = {
 
         // sigma business routes
         {
-            path: '/associations/list',
+            path: '/business/associations/list',
             element: <AssociationsManagement />
+        },
+        {
+            path: '/business/associations/details/:assoId',
+            element: <AssociationDetails />
+        },
+        {
+            path: '/associations/sections',
+            element: <SectionsManagement />
         }
     ]
 };

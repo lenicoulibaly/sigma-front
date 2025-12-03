@@ -30,6 +30,7 @@ import useScriptRef from 'hooks/useScriptRef';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { red } from '@mui/material/colors';
+import RegisterUserWizard from 'src/sigma/views/business/adhesions/RegisterUserWizard';
 
 // ===============================|| JWT LOGIN ||=============================== //
 
@@ -41,6 +42,7 @@ const JWTLogin = ({ loginProp, ...others }) => {
 
     const [loginErrorMsg, setLoginErrorMsg] = React.useState(null);
 
+    const [openRegister, setOpenRegister] = React.useState(false);
     const [showPassword, setShowPassword] = React.useState(false);
     const handleClickShowPassword = () => {
         setShowPassword(!showPassword);
@@ -160,10 +162,24 @@ const JWTLogin = ({ loginProp, ...others }) => {
                     <Box sx={{ mt: 2 }}>
                         <AnimateButton>
                             <Button color="secondary" disabled={isSubmitting} fullWidth size="large" type="submit" variant="contained">
-                                Sign In
+                                Login
                             </Button>
                         </AnimateButton>
                     </Box>
+                    <Box sx={{ mt: 2 }}>
+                        <AnimateButton>
+                            <Button 
+                                color="primary" 
+                                fullWidth 
+                                size="large" 
+                                variant="outlined" 
+                                onClick={() => setOpenRegister(true)}
+                            >
+                                Créer un compte
+                            </Button>
+                        </AnimateButton>
+                    </Box>
+                    <RegisterUserWizard open={openRegister} handleClose={() => setOpenRegister(false)} />
                 </form>
             )}
         </Formik>
@@ -171,7 +187,9 @@ const JWTLogin = ({ loginProp, ...others }) => {
 };
 
 JWTLogin.propTypes = {
-    loginProp: PropTypes.number
+    loginProp: PropTypes.shape({
+        onCreateAccount: PropTypes.func
+    })
 };
 
 export default JWTLogin;
