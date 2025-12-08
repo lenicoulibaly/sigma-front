@@ -6,6 +6,7 @@ export const DOCUMENT_KEYS = {
   all: ['documents'],
   lists: () => [...DOCUMENT_KEYS.all, 'list'],
   listByObject: (params) => [...DOCUMENT_KEYS.lists(), { ...params }],
+  latest: (params) => [...DOCUMENT_KEYS.all, 'latest', { ...params }],
   item: (docId) => [...DOCUMENT_KEYS.all, 'item', docId],
 };
 
@@ -78,5 +79,15 @@ export const useDeleteDocument = () => {
 export const useDownloadDocument = () => {
   return useMutation({
     mutationFn: (docId) => documentApi.download(docId),
+  });
+};
+
+// Get latest document by type/object
+export const useLatestDocument = (params = {}, options = {}) => {
+  return useQuery({
+    queryKey: DOCUMENT_KEYS.latest(params),
+    queryFn: () => documentApi.latest(params),
+    enabled: !!params?.typeCode && params?.objectId != null && (options.enabled ?? true),
+    staleTime: options.staleTime ?? 30_000,
   });
 };

@@ -73,6 +73,18 @@ export const documentApi = {
     const response = await apiClient.get(`/documents/search/${encodeURIComponent(tableName)}/${objectId}?${query}`);
     return response.data; // Page<Document>
   },
+
+  // Get latest document by type and object as per DocumentResource#getLatest
+  latest: async ({ typeCode, objectId, objectTableName }) => {
+    if (!typeCode) throw new Error('typeCode is required');
+    if (objectId === undefined || objectId === null) throw new Error('objectId is required');
+    const query = qs.stringify(
+      { typeCode, objectId, objectTableName },
+      { arrayFormat: 'repeat', skipNulls: true }
+    );
+    const response = await apiClient.get(`/documents/open/latest?${query}`);
+    return response.data; // ReadDocDTO
+  },
 };
 
 export default documentApi;

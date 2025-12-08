@@ -104,17 +104,21 @@ const AssociationsList = ({ searchTerm }) => {
                 // Navigate to the sections tab of the association details page
                 navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 1 } });
                 handleActionMenuClose();
+            } else if (action === 'documents-list') {
+                // Navigate to the documents tab of the association details page
+                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 2 } });
+                handleActionMenuClose();
             } else if (action === 'members-list') {
                 // Navigate to the members tab of the association details page
-                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 2 } });
+                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 3 } });
                 handleActionMenuClose();
             } else if (action === 'membership-requests') {
                 // Navigate to the membership requests tab of the association details page
-                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 3 } });
+                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 4 } });
                 handleActionMenuClose();
             } else if (action === 'cotisations-list') {
                 // Navigate to the cotisations tab of the association details page
-                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 4 } });
+                navigate(`/business/associations/details/${selectedAssociation.assoId}`, { state: { tabIndex: 5 } });
                 handleActionMenuClose();
             } else {
                 // Here you would implement the other actions
@@ -248,6 +252,7 @@ const AssociationsList = ({ searchTerm }) => {
                 <MenuItem onClick={() => handleActionClick('edit')}>Modifier</MenuItem>
                 <MenuItem onClick={() => handleActionClick('add-contribution')}>Ajouter une cotisation</MenuItem>
                 <MenuItem onClick={() => handleActionClick('sections-list')}>Liste des sections</MenuItem>
+                <MenuItem onClick={() => handleActionClick('documents-list')}>Liste des documents</MenuItem>
                 <MenuItem onClick={() => handleActionClick('members-list')}>Liste des membres</MenuItem>
                 <MenuItem onClick={() => handleActionClick('membership-requests')}>Liste des demandes d'adhésion</MenuItem>
                 <MenuItem onClick={() => handleActionClick('cotisations-list')}>Liste des cotisations</MenuItem>

@@ -15,7 +15,10 @@ import {
   IconButton,
   Paper,
   styled,
-  InputAdornment
+  InputAdornment,
+  Checkbox,
+  FormControlLabel,
+  Tooltip
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -28,6 +31,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import SaveIcon from '@mui/icons-material/Save';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 // project imports
 import Modal from 'src/sigma/components/commons/Modal';
@@ -35,7 +39,9 @@ import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
 import { useOpenStructuresSearch } from 'src/sigma/hooks/query/useStructures';
 import { useTypesByGroupCode, useDirectSousTypes } from 'src/sigma/hooks/query/useTypes';
 import { useOpenAssociationsList } from 'src/sigma/hooks/query/useAssociations';
-import { useCreateUser } from 'src/sigma/hooks/query/useUsers';
+import { useCreateUserWithDemandeAdhesion } from 'src/sigma/hooks/query/useAdhesions';
+import { useLatestDocument } from 'src/sigma/hooks/query/useDocuments';
+import { IFrameModal } from 'src/sigma/components/commons/IFrameModal';
 
 // Styled frames (same spirit as AssociationModal & RegisterUserModal)
 const LabeledFrame = styled(Box)(({ theme }) => ({
@@ -117,10 +123,41 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     datePremierePriseService: null,
     indice: '',
     assoId: null,
+    accepteRgpd: false,
+    accepteCharte: false,
+    accepteStatutsReglements: false,
     documents: [emptyDocumentRow()]
   });
 
-  const createUser = useCreateUser();
+  const createWithDemande = useCreateUserWithDemandeAdhesion();
+
+  // Latest association docs (charte & statuts/règlements)
+  const { data: latestCharteDoc } = useLatestDocument({
+    typeCode: 'CHRT_ADH',
+    objectId: values.assoId,
+    objectTableName: 'ASSOCIATION',
+  }, { enabled: !!values.assoId });
+  const { data: latestStatutsDoc } = useLatestDocument({
+    typeCode: 'DOC_ASSO_STATUTS_REGLEMENTS',
+    objectId: values.assoId,
+    objectTableName: 'ASSOCIATION',
+  }, { enabled: !!values.assoId });
+
+  // Viewer state for documents
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerBase64, setViewerBase64] = useState('');
+  const [viewerMime, setViewerMime] = useState('application/pdf');
+  const [viewerTitle, setViewerTitle] = useState('');
+
+  const openDocInViewer = (doc, title) => {
+    if (!doc) return;
+    const base64 = doc?.file || doc?.base64 || '';
+    const mime = doc?.docMimeType || doc?.mimeType || 'application/pdf';
+    setViewerBase64(base64 || '');
+    setViewerMime(mime);
+    setViewerTitle(title || doc?.docName || 'Document');
+    setViewerOpen(true);
+  };
 
   const setField = (name, value) => setValues((prev) => ({ ...prev, [name]: value }));
 
@@ -145,13 +182,20 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
 
   const canContinueStep1 = useMemo(() => Object.keys(requiredErrors).length === 0 && !indiceError, [requiredErrors, indiceError]);
 
+  const canSubmit = useMemo(() => {
+    const needCharte = !!latestCharteDoc?.docId || !!latestCharteDoc?.id || !!latestCharteDoc;
+    const rgpdOk = values.accepteRgpd === true;
+    const charteOk = needCharte ? values.accepteCharte === true : true;
+    return !!values.assoId && rgpdOk && charteOk;
+  }, [values.assoId, values.accepteRgpd, values.accepteCharte, latestCharteDoc]);
+
   const handleNext = () => setActiveStep((s) => Math.min(s + 1, steps.length - 1));
   const handleBack = () => setActiveStep((s) => Math.max(s - 1, 0));
 
   const reset = () => {
     setValues({
       email: '', matricule: '', gradeCode: '', firstName: '', lastName: '', codeCivilite: '', tel: '', strId: null, adresse: '', lieuNaissance: '', dateNaissance: null,
-      emploiCode: '', emploiName: '', datePremierePriseService: null, indice: '', assoId: null, documents: [emptyDocumentRow()]
+      emploiCode: '', emploiName: '', datePremierePriseService: null, indice: '', assoId: null, accepteRgpd: false, accepteCharte: false, accepteStatutsReglements: false, documents: [emptyDocumentRow()]
     });
     setAssoInput('');
     setAssoQuery('');
@@ -163,8 +207,14 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
   const onCloseAlert = () => setAlert((a) => ({ ...a, open: false }));
 
   const handleSubmit = async () => {
-    // Build payload matching UserDTO
+    // Build payload matching AdhesionDTO for /demandes-adhesion/inscription
     const payload = {
+      // Required confirmations
+      accepteRgpd: values.accepteRgpd === true,
+      accepteCharte: values.accepteCharte === true,
+      accepteStatutsReglements: values.accepteStatutsReglements === true, 
+
+      // Identity & contact
       email: values.email || undefined,
       matricule: values.matricule || undefined,
       gradeCode: values.gradeCode || undefined,
@@ -172,15 +222,18 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
       firstName: values.firstName,
       lastName: values.lastName,
       tel: values.tel,
-      strId: values.strId || undefined,
-      adresse: values.adresse || undefined,
+      // Birth & address
       lieuNaissance: values.lieuNaissance || undefined,
-      dateNaissance: values.dateNaissance ? new Date(values.dateNaissance) : undefined,
+      dateNaissance: values.dateNaissance || undefined,
+      // Job
       emploiCode: values.emploiCode || undefined,
       emploiName: values.emploiName || undefined,
       indice: values.indice ? parseInt(values.indice, 10) : undefined,
-      datePremierePriseService: values.datePremierePriseService ? new Date(values.datePremierePriseService) : undefined,
+      // Structure & association
+      strId: values.strId || undefined,
       assoId: values.assoId || undefined,
+
+      // Documents -> UploadDocReq list
       documents: (values.documents || [])
         .filter((d) => d.docTypeCode && d.file)
         .map((d) => ({
@@ -195,8 +248,8 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     };
 
     try {
-      await createUser.mutateAsync(payload);
-      showAlert("Utilisateur créé avec succès", 'success');
+      await createWithDemande.mutateAsync(payload);
+      showAlert('Demande d\'adhésion soumise avec succès', 'success');
       if (typeof onRegistered === 'function') onRegistered();
       reset();
       handleClose?.();
@@ -206,7 +259,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
       if (Array.isArray(apiMsgs)) msg = apiMsgs.filter(Boolean).join('\n');
       else if (typeof apiMsgs === 'string') msg = apiMsgs;
       else msg = e?.message;
-      showAlert(msg || "Échec de l'inscription", 'error');
+      showAlert(msg || 'Échec de la soumission de la demande', 'error');
     }
   };
 
@@ -350,6 +403,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
           </Grid>
         </Grid>
       </LabeledFrame>
+
     </Box>
   );
 
@@ -384,6 +438,9 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               inputValue={assoInput}
               onChange={(_e, opt) => {
                 setField('assoId', opt?.id ?? null);
+                // Reset approvals when association changes
+                setField('accepteCharte', false);
+                setField('accepteStatutsReglements', false);
                 if (opt?.label) setAssoInput(opt.label);
               }}
               onInputChange={(_e, input) => {
@@ -402,6 +459,54 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               )}
             />
           </Grid>
+        </Grid>
+      </LabeledFrame>
+
+      <LabeledFrame>
+        <FrameLabel>Approbations</FrameLabel>
+        <Grid container spacing={1} sx={{ mb: 1 }}>
+          <Grid item xs={12} md={6}>
+            <FormControlLabel
+              control={<Checkbox checked={values.accepteRgpd} onChange={(e) => setField('accepteRgpd', e.target.checked)} />}
+              label="J'accepte le traitement de mes données (RGPD)"
+            />
+          </Grid>
+
+          {latestCharteDoc && (
+            <Grid item xs={12} md={6}>
+              <FormControlLabel
+                control={<Checkbox checked={values.accepteCharte} onChange={(e) => setField('accepteCharte', e.target.checked)} />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>{"J'ai lu et j'accepte la charte d'adhésion"}</span>
+                    <Tooltip title="Voir le document">
+                      <IconButton size="small" color="primary" aria-label="voir le document" onClick={() => openDocInViewer(latestCharteDoc, "Charte d'adhésion") }>
+                        <VisibilityOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                }
+              />
+            </Grid>
+          )}
+
+          {latestStatutsDoc && (
+            <Grid item xs={12} md={6}>
+              <FormControlLabel
+                control={<Checkbox checked={values.accepteStatutsReglements} onChange={(e) => setField('accepteStatutsReglements', e.target.checked)} />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>{"j'ai lu et j'accepte les statuts et règlements"}</span>
+                    <Tooltip title="Voir le document">
+                      <IconButton size="small" color="primary" aria-label="voir le document" onClick={() => openDocInViewer(latestStatutsDoc, 'Statuts et règlements')}>
+                        <VisibilityOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                }
+              />
+            </Grid>
+          )}
         </Grid>
       </LabeledFrame>
 
@@ -500,10 +605,10 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                   variant="contained"
                   startIcon={<SaveIcon />}
                   onClick={handleSubmit}
-                  disabled={createUser.isLoading}
+                  disabled={!canSubmit || createWithDemande.isLoading}
                   color="secondary"
                 >
-                  {createUser.isLoading ? 'Enregistrement…' : 'Terminer'}
+                  {createWithDemande.isLoading ? 'Envoi…' : 'Terminer'}
                 </Button>
               )}
             </Box>
@@ -525,6 +630,14 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
 
         </Box>
       </Modal>
+
+      <IFrameModal
+        opened={viewerOpen}
+        title={viewerTitle}
+        base64String={viewerBase64}
+        mimeType={viewerMime}
+        handleClose={() => { setViewerOpen(false); setViewerBase64(''); }}
+      />
 
       <FloatingAlert open={alert.open} message={alert.message} severity={alert.severity} onClose={onCloseAlert} />
     </>

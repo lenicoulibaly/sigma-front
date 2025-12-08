@@ -17,6 +17,13 @@ const ProfilesManagement = Loadable(lazy(() => import('src/sigma/views/administr
 const UsersManagement = Loadable(lazy(() => import('src/sigma/views/administration/users')));
 const UserProfiles = Loadable(lazy(() => import('src/sigma/views/administration/users/UserProfiles')));
 
+// sigma workflow admin routing
+const SigmaWorkflowsListPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/WorkflowsListPage')));
+const SigmaTransitionsListPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/TransitionsListPage')));
+const SigmaTransitionRulesPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/TransitionRulesPage')));
+const SigmaTransitionValidationConfigPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/TransitionValidationConfigPage')));
+const SigmaWorkflowExecTestPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/WorkflowExecTestPage')));
+
 // sigma business routing
 const AssociationsManagement = Loadable(lazy(() => import('src/sigma/views/business/associations')));
 const AssociationDetails = Loadable(lazy(() => import('src/sigma/views/business/associations/AssociationDetails')));
@@ -705,6 +712,27 @@ const MainRoutes = {
         {
             path: '/administration/types',
             element: <TypesManagement />
+        },
+        // workflow engine admin
+        {
+            path: '/admin/workflows',
+            element: <SigmaWorkflowsListPage />
+        },
+        {
+            path: '/admin/workflows/:id/transitions',
+            element: <SigmaTransitionsListPage />
+        },
+        {
+            path: '/admin/transitions/:privilegeCode/rules',
+            element: <SigmaTransitionRulesPage />
+        },
+        {
+            path: '/admin/transitions/:privilegeCode/validation',
+            element: <SigmaTransitionValidationConfigPage />
+        },
+        {
+            path: '/admin/workflow-exec-test',
+            element: <SigmaWorkflowExecTestPage />
         },
         {
             path: '/administration/privileges',
