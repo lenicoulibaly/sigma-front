@@ -18,16 +18,20 @@ const UsersManagement = Loadable(lazy(() => import('src/sigma/views/administrati
 const UserProfiles = Loadable(lazy(() => import('src/sigma/views/administration/users/UserProfiles')));
 
 // sigma workflow admin routing
-const SigmaWorkflowsListPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/WorkflowsListPage')));
+const SigmaWorkflowsListPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin')));
 const SigmaTransitionsListPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/TransitionsListPage')));
 const SigmaTransitionRulesPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/TransitionRulesPage')));
 const SigmaTransitionValidationConfigPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/TransitionValidationConfigPage')));
 const SigmaWorkflowExecTestPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/WorkflowExecTestPage')));
+const SigmaWorkflowDetailsPage = Loadable(lazy(() => import('src/sigma/views/workflow-admin/WorkflowDetails')));
 
 // sigma business routing
 const AssociationsManagement = Loadable(lazy(() => import('src/sigma/views/business/associations')));
 const AssociationDetails = Loadable(lazy(() => import('src/sigma/views/business/associations/AssociationDetails')));
 const SectionsManagement = Loadable(lazy(() => import('src/sigma/views/business/sections')));
+
+// examples
+const SigmaGenericListDemo = Loadable(lazy(() => import('src/sigma/views/examples/GenericListDemo')));
 
 // dashboard routing
 const DashboardDefault = Loadable(lazy(() => import('views/dashboard/Default')));
@@ -719,6 +723,10 @@ const MainRoutes = {
             element: <SigmaWorkflowsListPage />
         },
         {
+            path: '/admin/workflows/:id',
+            element: <SigmaWorkflowDetailsPage />
+        },
+        {
             path: '/admin/workflows/:id/transitions',
             element: <SigmaTransitionsListPage />
         },
@@ -753,6 +761,11 @@ const MainRoutes = {
         {
             path: '/administration/users/:userId/profiles',
             element: <UserProfiles />
+        },
+        // examples
+        {
+            path: '/examples/generic-list',
+            element: <SigmaGenericListDemo />
         },
         {
             path: '/administration/user-profiles',

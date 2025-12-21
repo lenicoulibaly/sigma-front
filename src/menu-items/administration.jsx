@@ -20,7 +20,7 @@ const icons = {
 
 const administration = {
     id: 'administration',
-    title: <FormattedMessage id="administration" />,
+    title: <FormattedMessage id="administration" />, 
     type: 'collapse',
     icon: icons.IconSettings,
     children: [
@@ -79,6 +79,32 @@ const administration = {
             icon: icons.IconBuildingSkyscraper,
             url: '/administration/structures',
             tooltip: 'Gestion des structures'
+        },
+        // ==== Workflow Engine Admin ====
+        {
+            id: 'workflow-admin',
+            title: 'Workflows',
+            type: 'item',
+            icon: icons.IconCategory,
+            url: '/admin/workflows',
+            tooltip: 'Console d\'administration du moteur de workflow'
+        },
+        {
+            id: 'workflow-exec-test',
+            title: 'Test exécution workflow',
+            type: 'item',
+            icon: icons.IconCategory,
+            url: '/admin/workflow-exec-test',
+            tooltip: 'Tester une exécution de transition (multipart)'
+        },
+        // Exemple d'utilisation du composant générique de liste
+        {
+            id: 'generic-list-demo',
+            title: 'Exemple: Liste générique',
+            type: 'item',
+            icon: icons.IconCategory,
+            url: '/examples/generic-list',
+            tooltip: "Démonstration du composant de liste paginée et filtrable"
         }
     ]
 };

@@ -23,12 +23,12 @@ import RuleIcon from '@mui/icons-material/Rule';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import {
-  listTransitionsByWorkflow,
-  createTransition,
-  updateTransition,
-  deleteTransition,
-  reorderTransitions
-} from 'src/sigma/api/workflowAdminApi';
+  useTransitionsByWorkflow,
+  useCreateTransition,
+  useUpdateTransition,
+  useDeleteTransition,
+  useReorderTransitions,
+} from 'src/sigma/hooks/query/useWorkflowAdmin';
 import TransitionFormDialog from './TransitionFormDialog';
 
 export default function TransitionsListPage() {
@@ -43,21 +43,15 @@ export default function TransitionsListPage() {
 
   const sortedItems = useMemo(() => [...items].sort((a, b) => (a.ordre || 0) - (b.ordre || 0)), [items]);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data = await listTransitionsByWorkflow(workflowId);
-      setItems(data || []);
-    } catch (e) {
-      setError(e?.message || 'Erreur lors du chargement');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading, refetch } = useTransitionsByWorkflow(workflowId, { enabled: !!workflowId });
 
   useEffect(() => {
-    if (workflowId) load();
-  }, [workflowId]);
+    setLoading(isLoading);
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (Array.isArray(data)) setItems(data || []);
+  }, [data]);
 
   const handleCreate = () => {
     setEditing({ workflowId: Number(workflowId) });
@@ -69,17 +63,22 @@ export default function TransitionsListPage() {
     setDialogOpen(true);
   };
 
+  const { mutateAsync: createTransitionMut } = useCreateTransition();
+  const { mutateAsync: updateTransitionMut } = useUpdateTransition();
+  const { mutateAsync: deleteTransitionMut } = useDeleteTransition();
+  const { mutateAsync: reorderTransitionsMut } = useReorderTransitions();
+
   const handleSubmit = async (values) => {
     try {
       if (editing?.privilegeCode) {
-        await updateTransition(editing.privilegeCode, values);
+        await updateTransitionMut({ privilegeCode: editing.privilegeCode, payload: values });
         setSuccess('Transition mise à jour');
       } else {
-        await createTransition({ ...values, workflowId: Number(workflowId) });
+        await createTransitionMut({ ...values, workflowId: Number(workflowId) });
         setSuccess('Transition créée');
       }
       setDialogOpen(false);
-      await load();
+      await refetch();
     } catch (e) {
       setError(e?.message || "Erreur lors de l'enregistrement");
     }
@@ -88,9 +87,9 @@ export default function TransitionsListPage() {
   const handleDelete = async (privilegeCode) => {
     if (!window.confirm('Supprimer cette transition ?')) return;
     try {
-      await deleteTransition(privilegeCode);
+      await deleteTransitionMut(privilegeCode);
       setSuccess('Transition supprimée');
-      await load();
+      await refetch();
     } catch (e) {
       setError(e?.message || 'Erreur lors de la suppression');
     }
@@ -105,7 +104,7 @@ export default function TransitionsListPage() {
     arr[newIdx] = tmp;
     // reassign ordre (1..N)
     const payload = arr.map((t, i) => ({ privilegeCode: t.privilegeCode, ordre: i + 1 }));
-    reorderTransitions(payload)
+    reorderTransitionsMut(payload)
       .then(() => {
         setSuccess('Ordre mis à jour');
         setItems(arr.map((t, i) => ({ ...t, ordre: i + 1 })));

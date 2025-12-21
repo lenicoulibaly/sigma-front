@@ -24,13 +24,13 @@ import CheckIcon from '@mui/icons-material/Check';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
-  listTransitionRulesByTransition,
-  createTransitionRule,
-  updateTransitionRule,
-  deleteTransitionRule,
-  validateTransitionRuleJson,
-  testTransitionRules
-} from 'src/sigma/api/workflowAdminApi';
+  useTransitionRulesByTransition,
+  useCreateTransitionRule,
+  useUpdateTransitionRule,
+  useDeleteTransitionRule,
+  useValidateTransitionRuleJson,
+  useTestTransitionRules
+} from 'src/sigma/hooks/query/useWorkflowAdmin';
 import JsonEditor from 'src/sigma/components/workflow-admin/JsonEditor';
 
 export default function TransitionRulesPage() {
@@ -46,12 +46,16 @@ export default function TransitionRulesPage() {
 
   const sortedRules = useMemo(() => [...rules].sort((a, b) => (a.ordre || 0) - (b.ordre || 0)), [rules]);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data = await listTransitionRulesByTransition(privilegeCode);
+  const { data, isLoading, refetch } = useTransitionRulesByTransition(privilegeCode);
+
+  useEffect(() => {
+    setLoading(isLoading);
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (Array.isArray(data)) {
       setRules(data || []);
-      if (data && data.length) {
+      if (data.length) {
         const r0 = data[0];
         setSelectedId(r0.id);
         setForm({
@@ -61,16 +65,8 @@ export default function TransitionRulesPage() {
           ruleJson: r0.ruleJson || ''
         });
       }
-    } catch (e) {
-      setError(e?.message || 'Erreur lors du chargement');
-    } finally {
-      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (privilegeCode) load();
-  }, [privilegeCode]);
+  }, [data]);
 
   const selectRule = (r) => {
     setSelectedId(r.id);
@@ -85,6 +81,13 @@ export default function TransitionRulesPage() {
     setForm({ ordre: (rules?.length || 0) + 1, statutDestinationCode: '', active: true, ruleJson: '{\n  \n}' });
   };
 
+  // Mutations
+  const { mutateAsync: createRule } = useCreateTransitionRule();
+  const { mutateAsync: updateRule } = useUpdateTransitionRule();
+  const { mutateAsync: deleteRule } = useDeleteTransitionRule();
+  const { mutateAsync: validateRuleJson } = useValidateTransitionRuleJson();
+  const { mutateAsync: runTestRules } = useTestTransitionRules();
+
   const save = async () => {
     try {
       const payload = {
@@ -95,13 +98,13 @@ export default function TransitionRulesPage() {
         ruleJson: form.ruleJson
       };
       if (selectedId) {
-        await updateTransitionRule(selectedId, { id: selectedId, ...payload });
+        await updateRule({ id: selectedId, payload: { id: selectedId, ...payload } });
         setSuccess('Règle mise à jour');
       } else {
-        await createTransitionRule(payload);
+        await createRule(payload);
         setSuccess('Règle créée');
       }
-      await load();
+      await refetch();
     } catch (e) {
       setError(e?.message || "Erreur lors de l'enregistrement");
     }
@@ -111,10 +114,10 @@ export default function TransitionRulesPage() {
     if (!selectedId) return;
     if (!window.confirm('Supprimer cette règle ?')) return;
     try {
-      await deleteTransitionRule(selectedId);
+      await deleteRule(selectedId);
       setSuccess('Règle supprimée');
       setSelectedId(null);
-      await load();
+      await refetch();
     } catch (e) {
       setError(e?.message || 'Erreur lors de la suppression');
     }
@@ -122,7 +125,7 @@ export default function TransitionRulesPage() {
 
   const validate = async () => {
     try {
-      const res = await validateTransitionRuleJson(form.ruleJson || '');
+      const res = await validateRuleJson(form.ruleJson || '');
       setValidationMsg(res.valid ? 'JSON valide' : res.errorMessage || 'Invalide');
     } catch (e) {
       setValidationMsg(e?.message || 'Erreur de validation');
@@ -132,7 +135,7 @@ export default function TransitionRulesPage() {
   const test = async () => {
     try {
       const facts = factsText ? JSON.parse(factsText) : {};
-      const res = await testTransitionRules(privilegeCode, facts);
+      const res = await runTestRules({ transitionPrivilegeCode: privilegeCode, facts });
       setSuccess(`nextStatus = ${res.nextStatus}`);
     } catch (e) {
       setError(e?.message || 'Erreur lors du test (vérifier le JSON)');

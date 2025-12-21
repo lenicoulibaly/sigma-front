@@ -5,3 +5,4 @@ export * from './useAuthorities';
 export * from './useTypes';
 export * from './usePrivileges';
 export * from './useDocuments';
+export * from './useWorkflowAdmin';

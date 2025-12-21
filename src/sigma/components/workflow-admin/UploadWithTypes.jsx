@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Box, Button, FormControl, InputLabel, MenuItem, Select, Stack, Typography } from '@mui/material';
-import { listDocTypes } from 'src/sigma/api/typesApi';
+import { typeApi } from 'src/sigma/api/administrationApi';
 
 export default function UploadWithTypes({ files, setFiles, fileTypes, setFileTypes }) {
   const [docTypes, setDocTypes] = useState([]);
 
   useEffect(() => {
     let mounted = true;
-    listDocTypes().then((data) => {
-      if (mounted) setDocTypes(data || []);
-    });
+    typeApi
+      .getTypesByGroup('DOC')
+      .then((data) => {
+        if (mounted) setDocTypes(data || []);
+      })
+      .catch(() => {
+        if (mounted) setDocTypes([]);
+      });
     return () => (mounted = false);
   }, []);
 

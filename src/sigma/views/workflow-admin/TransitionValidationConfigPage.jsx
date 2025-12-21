@@ -18,11 +18,11 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {
-  getTransitionValidationConfig,
-  putTransitionValidationConfig,
-  deleteTransitionValidationConfig
-} from 'src/sigma/api/workflowAdminApi';
-import { listDocTypes } from 'src/sigma/api/typesApi';
+  useTransitionValidationConfig,
+  usePutTransitionValidationConfig,
+  useDeleteTransitionValidationConfig
+} from 'src/sigma/hooks/query/useWorkflowAdmin';
+import { typeApi } from 'src/sigma/api/administrationApi';
 
 export default function TransitionValidationConfigPage() {
   const { privilegeCode } = useParams();
@@ -32,36 +32,44 @@ export default function TransitionValidationConfigPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const t = await listDocTypes();
-      setTypes(t || []);
-      try {
-        const data = await getTransitionValidationConfig(privilegeCode);
-        setValues({ commentRequired: !!data.commentRequired, requiredDocTypeCodes: data.requiredDocTypeCodes || [] });
-      } catch (e) {
-        if (e?.response?.status === 404) {
-          setValues({ commentRequired: false, requiredDocTypeCodes: [] });
-        } else {
-          throw e;
-        }
-      }
-    } catch (e) {
-      setError(e?.message || 'Erreur de chargement');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: cfg, isLoading: cfgLoading, error: cfgError, refetch: refetchCfg } = useTransitionValidationConfig(privilegeCode, { enabled: !!privilegeCode });
+  const { mutateAsync: putCfg } = usePutTransitionValidationConfig();
+  const { mutateAsync: deleteCfg } = useDeleteTransitionValidationConfig();
 
   useEffect(() => {
-    if (privilegeCode) load();
+    let cancelled = false;
+    const loadTypes = async () => {
+      setLoading(true);
+      try {
+        const t = await typeApi.getTypesByGroup('DOC');
+        if (!cancelled) setTypes(t || []);
+      } catch (e) {
+        if (!cancelled) setError(e?.message || 'Erreur de chargement');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    loadTypes();
+    return () => { cancelled = true; };
   }, [privilegeCode]);
+
+  useEffect(() => {
+    if (cfg) {
+      setValues({ commentRequired: !!cfg.commentRequired, requiredDocTypeCodes: cfg.requiredDocTypeCodes || [] });
+    } else if (cfgError && cfgError.response?.status === 404) {
+      setValues({ commentRequired: false, requiredDocTypeCodes: [] });
+    }
+  }, [cfg, cfgError]);
+
+  useEffect(() => {
+    setLoading((l) => l || cfgLoading);
+  }, [cfgLoading]);
 
   const save = async () => {
     try {
-      await putTransitionValidationConfig(privilegeCode, { transitionPrivilegeCode: privilegeCode, ...values });
+      await putCfg({ privilegeCode, dto: { transitionPrivilegeCode: privilegeCode, ...values } });
       setSuccess('Configuration enregistrée');
+      await refetchCfg();
     } catch (e) {
       setError(e?.message || 'Erreur lors de la sauvegarde');
     }
@@ -70,9 +78,10 @@ export default function TransitionValidationConfigPage() {
   const resetCfg = async () => {
     if (!window.confirm('Supprimer la configuration de validation ?')) return;
     try {
-      await deleteTransitionValidationConfig(privilegeCode);
+      await deleteCfg(privilegeCode);
       setValues({ commentRequired: false, requiredDocTypeCodes: [] });
       setSuccess('Configuration supprimée');
+      await refetchCfg();
     } catch (e) {
       setError(e?.message || 'Erreur lors de la suppression');
     }
