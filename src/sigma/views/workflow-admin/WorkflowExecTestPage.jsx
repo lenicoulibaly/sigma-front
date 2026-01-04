@@ -1,22 +1,18 @@
 import { useState } from 'react';
-import { Box, Button, Paper, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import { Autocomplete, Box, Button, Paper, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import UploadWithTypes from 'src/sigma/components/workflow-admin/UploadWithTypes';
 import JsonEditor from 'src/sigma/components/workflow-admin/JsonEditor';
 import { useWorkflows, useAvailableObjectTypes, useTransitionsByWorkflow, useApplyTransition } from 'sigma/hooks/query/useWorkflow';
 
 export default function WorkflowExecTestPage() {
-  const [workflowCode, setWorkflowCode] = useState('');
-  const [objectType, setObjectType] = useState('');
+  const [workflow, setWorkflow] = useState(null);
   const [objectType, setObjectType] = useState(null);
   const [objectId, setObjectId] = useState('');
-  const [transitionCode, setTransitionCode] = useState('');
   const [transition, setTransition] = useState(null);
   const [comment, setComment] = useState('');
   const [contextText, setContextText] = useState('{\n  \n}');
   const [files, setFiles] = useState([]);
   const [fileTypes, setFileTypes] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [response, setResponse] = useState(null);
@@ -26,11 +22,13 @@ export default function WorkflowExecTestPage() {
   const { data: transitions = [], isLoading: loadingTransitions } = useTransitionsByWorkflow(workflow?.id, { enabled: !!workflow?.id });
 
   const applyTransitionMutation = useApplyTransition();
+  const loading = applyTransitionMutation.isLoading;
+
   const submit = async () => {
     setResponse(null);
     setError('');
     try {
-      if (!workflowCode || !objectType || !objectId || !transitionCode) {
+      if (!workflow || !objectType || !objectId || !transition) {
         setError('Champs requis manquants');
         return;
       }
@@ -40,11 +38,29 @@ export default function WorkflowExecTestPage() {
       }
       let context = {};
       if (contextText) {
-        try { context = JSON.parse(contextText); } catch (e) { setError('Context JSON invalide'); return; }
+        try {
+          context = JSON.parse(contextText);
+        } catch (e) {
+          setError('Context JSON invalide');
+          return;
+        }
       }
-      const req = { transitionCode, comment: comment || undefined, context, workflowCode };
-      setLoading(true);
-      const res = await executeTransitionMultipart({ workflowCode, objectType, objectId, transitionCode, request: req, files, fileTypes });
+
+      const workflowCode = workflow.code;
+      const transitionId = transition.transitionId;
+
+      const req = { transitionId, comment: comment || undefined, context, workflowCode };
+
+      const res = await applyTransitionMutation.mutateAsync({
+        workflowCode,
+        objectType,
+        objectId,
+        transitionId,
+        request: req,
+        files,
+        fileTypes
+      });
+
       setResponse(res);
       setSuccess('Exécution réussie');
     } catch (e) {
@@ -58,8 +74,6 @@ export default function WorkflowExecTestPage() {
       } else {
         setError(e?.message || 'Erreur lors de l\'exécution');
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -71,16 +85,65 @@ export default function WorkflowExecTestPage() {
       <Paper sx={{ p: 2 }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2}>
-            <TextField label="Workflow Code" value={workflowCode} onChange={(e) => setWorkflowCode(e.target.value)} required sx={{ minWidth: 220 }} />
-            <TextField label="Object Type" value={objectType} onChange={(e) => setObjectType(e.target.value)} required sx={{ minWidth: 220 }} />
-            <TextField label="Object ID" value={objectId} onChange={(e) => setObjectId(e.target.value)} required sx={{ minWidth: 220 }} />
-            <TextField label="Transition Code" value={transitionCode} onChange={(e) => setTransitionCode(e.target.value)} required sx={{ minWidth: 220 }} />
+            <Autocomplete
+              size="small"
+              options={workflows}
+              getOptionLabel={(opt) => (opt ? `${opt.code} - ${opt.libelle}` : '')}
+              value={workflow}
+              onChange={(_, val) => {
+                setWorkflow(val);
+                setTransition(null);
+              }}
+              renderInput={(params) => <TextField {...params} label="Workflow" size="small" required />}
+              sx={{ minWidth: 300, '& .MuiOutlinedInput-root': { height: 40 } }}
+              loading={loadingWorkflows}
+            />
+            <Autocomplete
+              size="small"
+              options={objectTypes}
+              getOptionLabel={(opt) => opt || ''}
+              value={objectType}
+              onChange={(_, val) => setObjectType(val)}
+              renderInput={(params) => <TextField {...params} label="Object Type" size="small" required />}
+              sx={{ minWidth: 220, '& .MuiOutlinedInput-root': { height: 40 } }}
+              loading={loadingObjectTypes}
+            />
+            <TextField
+              size="small"
+              label="Object ID"
+              value={objectId}
+              onChange={(e) => setObjectId(e.target.value)}
+              required
+              sx={{ minWidth: 220, '& .MuiOutlinedInput-root': { height: 40 } }}
+            />
+            <Autocomplete
+              size="small"
+              options={transitions}
+              getOptionLabel={(opt) => (opt ? `${opt.transitionId} - ${opt.libelle}` : '')}
+              value={transition}
+              onChange={(_, val) => setTransition(val)}
+              renderInput={(params) => <TextField {...params} label="Transition" size="small" required />}
+              sx={{ minWidth: 300, '& .MuiOutlinedInput-root': { height: 40 } }}
+              loading={loadingTransitions}
+              disabled={!workflow}
+            />
           </Stack>
-          <TextField label="Commentaire" value={comment} onChange={(e) => setComment(e.target.value)} multiline minRows={2} />
+          <TextField
+            size="small"
+            label="Commentaire"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            multiline
+            minRows={2}
+          />
           <JsonEditor label="Context JSON" value={contextText} onChange={setContextText} />
           <UploadWithTypes files={files} setFiles={setFiles} fileTypes={fileTypes} setFileTypes={setFileTypes} />
-          <Button variant="contained" onClick={submit} disabled={loading || !workflowCode || !objectType || !objectId || !transitionCode}>
-            Envoyer
+          <Button
+            variant="contained"
+            onClick={submit}
+            disabled={loading || !workflow || !objectType || !objectId || !transition}
+          >
+            {loading ? 'Envoi...' : 'Envoyer'}
           </Button>
           {response && (
             <Paper variant="outlined" sx={{ p: 1 }}>
