@@ -29,9 +29,13 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import MainCard from 'ui-component/cards/MainCard';
 import { gridSpacing } from 'store/constant';
-import { useWorkflow, useUpdateWorkflow, useCreateTransition, useUpdateTransition, useSearchWorkflowStatuses, useSearchTransitionsByWorkflow } from 'src/sigma/hooks/query/useWorkflowAdmin';
-import Pagination from '../../components/commons/Pagination';
-import TransitionFormDialog from './TransitionFormDialog';
+import { useWorkflow, useUpdateWorkflow, useCreateTransition, useUpdateTransition, useDeleteTransition, useSearchWorkflowStatuses, useSearchTransitionsByWorkflow, useSearchWorkflowStatusGroups, useCreateWorkflowStatusGroup, useUpdateWorkflowStatusGroup, useDeleteWorkflowStatusGroup, TRANSITION_QUERY_KEYS, WORKFLOW_STATUS_QUERY_KEYS } from 'sigma/hooks/query/useWorkflow';
+import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
+import { useGenericListController } from 'src/sigma/components/commons/GenericSearchablePaginatedList';
+import DetailsTab from './tabs/DetailsTab';
+import StatusesTab from './tabs/StatusesTab';
+import StatusGroupsTab from './tabs/StatusGroupsTab';
+import TransitionsTab from './tabs/TransitionsTab';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -107,15 +111,7 @@ export default function WorkflowDetails() {
     const [alertMessage, setAlertMessage] = useState('');
     const [alertSeverity, setAlertSeverity] = useState('info');
 
-  const { data: wf, isLoading: wfLoading, refetch: refetchWf } = useWorkflow(id);
-  const { data: transData, isLoading: transLoading, refetch: refetchTrans } = useSearchTransitionsByWorkflow(
-    { workflowId: id, key: transKey || undefined, page: transPage, size: transPageSize },
-    { enabled: value === 2 && !!id }
-  );
-  const { data: statusData, isLoading: statusLoading, refetch: refetchStatuses } = useSearchWorkflowStatuses(
-    { workflowId: id, key: statusKey || undefined, page: statusPage, size: statusPageSize },
-    { enabled: value === 1 && !!id }
-  );
+    const { data: wf, isLoading: wfLoading, refetch: refetchWf } = useWorkflow(id);
 
   // Controllers for generic lists
   const statusesController = useGenericListController({

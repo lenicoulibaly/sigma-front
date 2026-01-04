@@ -5,7 +5,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import Modal from '../../components/commons/Modal';
 import { gridSpacing } from 'store/constant';
 import { useTypesByGroupCode, useDirectSousTypes } from '../../hooks/query/useTypes';
-import { useCreateWorkflow } from '../../hooks/query/useWorkflowAdmin';
+import { useCreateWorkflow } from '../../hooks/query/useWorkflow';
 
 // Styled components for labeled frames (align with AssociationModal)
 const LabeledFrame = styled(Box)(({ theme }) => ({

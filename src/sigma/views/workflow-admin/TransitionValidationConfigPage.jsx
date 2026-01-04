@@ -21,11 +21,12 @@ import {
   useTransitionValidationConfig,
   usePutTransitionValidationConfig,
   useDeleteTransitionValidationConfig
-} from 'src/sigma/hooks/query/useWorkflowAdmin';
+} from 'sigma/hooks/query/useWorkflow';
 import { typeApi } from 'src/sigma/api/administrationApi';
 
 export default function TransitionValidationConfigPage() {
   const { privilegeCode } = useParams();
+  const { transitionId } = useParams();
   const [values, setValues] = useState({ commentRequired: false, requiredDocTypeCodes: [] });
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,7 @@ export default function TransitionValidationConfigPage() {
   const [success, setSuccess] = useState('');
 
   const { data: cfg, isLoading: cfgLoading, error: cfgError, refetch: refetchCfg } = useTransitionValidationConfig(privilegeCode, { enabled: !!privilegeCode });
+  const { data: cfg, isLoading: cfgLoading, error: cfgError, refetch: refetchCfg } = useTransitionValidationConfig(transitionId, { enabled: !!transitionId });
   const { mutateAsync: putCfg } = usePutTransitionValidationConfig();
   const { mutateAsync: deleteCfg } = useDeleteTransitionValidationConfig();
 
@@ -52,6 +54,7 @@ export default function TransitionValidationConfigPage() {
     loadTypes();
     return () => { cancelled = true; };
   }, [privilegeCode]);
+  }, [transitionId]);
 
   useEffect(() => {
     if (cfg) {
@@ -68,6 +71,7 @@ export default function TransitionValidationConfigPage() {
   const save = async () => {
     try {
       await putCfg({ privilegeCode, dto: { transitionPrivilegeCode: privilegeCode, ...values } });
+      await putCfg({ transitionId, dto: { transitionId, ...values } });
       setSuccess('Configuration enregistrée');
       await refetchCfg();
     } catch (e) {
@@ -79,6 +83,7 @@ export default function TransitionValidationConfigPage() {
     if (!window.confirm('Supprimer la configuration de validation ?')) return;
     try {
       await deleteCfg(privilegeCode);
+      await deleteCfg(transitionId);
       setValues({ commentRequired: false, requiredDocTypeCodes: [] });
       setSuccess('Configuration supprimée');
       await refetchCfg();
@@ -91,6 +96,7 @@ export default function TransitionValidationConfigPage() {
     <Box p={2}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h4">Validation — {privilegeCode}</Typography>
+        <Typography variant="h4">Validation — {transitionId}</Typography>
         <Button component={RouterLink} to={`/admin/workflows`} startIcon={<ArrowBackIcon />}>Workflows</Button>
       </Stack>
       <Paper sx={{ p: 2 }}>

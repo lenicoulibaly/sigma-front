@@ -28,7 +28,7 @@ import {
   useUpdateTransition,
   useDeleteTransition,
   useReorderTransitions,
-} from 'src/sigma/hooks/query/useWorkflowAdmin';
+} from 'sigma/hooks/query/useWorkflow';
 import TransitionFormDialog from './TransitionFormDialog';
 
 export default function TransitionsListPage() {

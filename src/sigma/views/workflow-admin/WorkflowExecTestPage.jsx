@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { Box, Button, Paper, Snackbar, Stack, TextField, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, Paper, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import UploadWithTypes from 'src/sigma/components/workflow-admin/UploadWithTypes';
 import JsonEditor from 'src/sigma/components/workflow-admin/JsonEditor';
-import { executeTransitionMultipart } from 'src/sigma/api/execApi';
+import { useWorkflows, useAvailableObjectTypes, useTransitionsByWorkflow, useApplyTransition } from 'sigma/hooks/query/useWorkflow';
 
 export default function WorkflowExecTestPage() {
   const [workflowCode, setWorkflowCode] = useState('');
   const [objectType, setObjectType] = useState('');
+  const [objectType, setObjectType] = useState(null);
   const [objectId, setObjectId] = useState('');
   const [transitionCode, setTransitionCode] = useState('');
+  const [transition, setTransition] = useState(null);
   const [comment, setComment] = useState('');
   const [contextText, setContextText] = useState('{\n  \n}');
   const [files, setFiles] = useState([]);
@@ -18,6 +21,11 @@ export default function WorkflowExecTestPage() {
   const [success, setSuccess] = useState('');
   const [response, setResponse] = useState(null);
 
+  const { data: workflows = [], isLoading: loadingWorkflows } = useWorkflows();
+  const { data: objectTypes = [], isLoading: loadingObjectTypes } = useAvailableObjectTypes();
+  const { data: transitions = [], isLoading: loadingTransitions } = useTransitionsByWorkflow(workflow?.id, { enabled: !!workflow?.id });
+
+  const applyTransitionMutation = useApplyTransition();
   const submit = async () => {
     setResponse(null);
     setError('');

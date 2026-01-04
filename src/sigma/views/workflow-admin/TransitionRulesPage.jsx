@@ -30,7 +30,7 @@ import {
   useDeleteTransitionRule,
   useValidateTransitionRuleJson,
   useTestTransitionRules
-} from 'src/sigma/hooks/query/useWorkflowAdmin';
+} from 'sigma/hooks/query/useWorkflow';
 import JsonEditor from 'src/sigma/components/workflow-admin/JsonEditor';
 
 export default function TransitionRulesPage() {
