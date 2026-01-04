@@ -32,21 +32,22 @@ import {
   useTestTransitionRules
 } from 'sigma/hooks/query/useWorkflow';
 import JsonEditor from 'src/sigma/components/workflow-admin/JsonEditor';
+import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
 
 export default function TransitionRulesPage() {
-  const { privilegeCode } = useParams();
+  const { transitionId } = useParams();
   const [rules, setRules] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [form, setForm] = useState({ ordre: 1, statutDestinationCode: '', active: true, ruleJson: '{\n  \n}' });
   const [factsText, setFactsText] = useState('{\n  \n}');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
+  const showAlert = (message, severity = 'success') => setAlert({ open: true, message, severity });
   const [validationMsg, setValidationMsg] = useState('');
 
   const sortedRules = useMemo(() => [...rules].sort((a, b) => (a.ordre || 0) - (b.ordre || 0)), [rules]);
 
-  const { data, isLoading, refetch } = useTransitionRulesByTransition(privilegeCode);
+  const { data, isLoading, refetch } = useTransitionRulesByTransition(transitionId);
 
   useEffect(() => {
     setLoading(isLoading);
@@ -91,7 +92,7 @@ export default function TransitionRulesPage() {
   const save = async () => {
     try {
       const payload = {
-        transitionPrivilegeCode: privilegeCode,
+        transitionId: transitionId,
         ordre: Number(form.ordre) || 0,
         statutDestinationCode: form.statutDestinationCode || null,
         active: !!form.active,
@@ -99,14 +100,14 @@ export default function TransitionRulesPage() {
       };
       if (selectedId) {
         await updateRule({ id: selectedId, payload: { id: selectedId, ...payload } });
-        setSuccess('Règle mise à jour');
+        showAlert('Règle mise à jour');
       } else {
         await createRule(payload);
-        setSuccess('Règle créée');
+        showAlert('Règle créée');
       }
       await refetch();
     } catch (e) {
-      setError(e?.message || "Erreur lors de l'enregistrement");
+      showAlert(e?.message || "Erreur lors de l'enregistrement", 'error');
     }
   };
 
@@ -115,11 +116,11 @@ export default function TransitionRulesPage() {
     if (!window.confirm('Supprimer cette règle ?')) return;
     try {
       await deleteRule(selectedId);
-      setSuccess('Règle supprimée');
+      showAlert('Règle supprimée');
       setSelectedId(null);
       await refetch();
     } catch (e) {
-      setError(e?.message || 'Erreur lors de la suppression');
+      showAlert(e?.message || 'Erreur lors de la suppression', 'error');
     }
   };
 
@@ -127,25 +128,33 @@ export default function TransitionRulesPage() {
     try {
       const res = await validateRuleJson(form.ruleJson || '');
       setValidationMsg(res.valid ? 'JSON valide' : res.errorMessage || 'Invalide');
+      showAlert(res.valid ? 'JSON valide' : 'JSON invalide', res.valid ? 'success' : 'warning');
     } catch (e) {
       setValidationMsg(e?.message || 'Erreur de validation');
+      showAlert('Erreur de validation', 'error');
     }
   };
 
   const test = async () => {
     try {
       const facts = factsText ? JSON.parse(factsText) : {};
-      const res = await runTestRules({ transitionPrivilegeCode: privilegeCode, facts });
-      setSuccess(`nextStatus = ${res.nextStatus}`);
+      const res = await runTestRules({ transitionId: transitionId, facts });
+      showAlert(`nextStatus = ${res.nextStatus}`);
     } catch (e) {
-      setError(e?.message || 'Erreur lors du test (vérifier le JSON)');
+      showAlert(e?.message || 'Erreur lors du test (vérifier le JSON)', 'error');
     }
   };
 
   return (
     <Box p={2}>
+      <FloatingAlert
+        open={alert.open}
+        feedBackMessages={alert.message}
+        severity={alert.severity}
+        onClose={() => setAlert({ ...alert, open: false })}
+      />
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-        <Typography variant="h4">Règles de transition — {privilegeCode}</Typography>
+        <Typography variant="h4">Règles de transition — {transitionId}</Typography>
         <Button component={RouterLink} to={`/admin/workflows`} startIcon={<ArrowBackIcon />}>
           Workflows
         </Button>
@@ -178,18 +187,24 @@ export default function TransitionRulesPage() {
                 <TextField label="Statut destination (code)" value={form.statutDestinationCode} onChange={handleChange('statutDestinationCode')} sx={{ flex: 1 }} />
                 <FormControlLabel control={<Checkbox checked={!!form.active} onChange={toggleActive} />} label="Actif" />
               </Stack>
-              <JsonEditor label="ruleJson" value={form.ruleJson} onChange={(v) => setForm((f) => ({ ...f, ruleJson: v }))} />
-              <Stack direction="row" spacing={1}>
-                <Button variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={loading}>
-                  Enregistrer
-                </Button>
-                <Button color="error" startIcon={<DeleteIcon />} onClick={remove} disabled={!selectedId}>
-                  Supprimer
-                </Button>
-                <Button variant="outlined" startIcon={<CheckIcon />} onClick={validate}>
-                  Valider JSON
-                </Button>
-              </Stack>
+              <JsonEditor
+                label="ruleJson"
+                value={form.ruleJson}
+                onChange={(v) => setForm((f) => ({ ...f, ruleJson: v }))}
+                actions={
+                  <>
+                    <Button variant="contained" startIcon={<SaveIcon />} onClick={save} disabled={loading}>
+                      Enregistrer
+                    </Button>
+                    <Button color="error" startIcon={<DeleteIcon />} onClick={remove} disabled={!selectedId}>
+                      Supprimer
+                    </Button>
+                    <Button variant="outlined" startIcon={<CheckIcon />} onClick={validate}>
+                      Valider JSON
+                    </Button>
+                  </>
+                }
+              />
               <Divider sx={{ my: 1 }} />
               <Typography variant="subtitle1">Tester les règles</Typography>
               <TextField label="facts (JSON)" value={factsText} onChange={(e) => setFactsText(e.target.value)} multiline minRows={6} />
