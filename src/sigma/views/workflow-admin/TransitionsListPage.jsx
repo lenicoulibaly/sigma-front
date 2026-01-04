@@ -30,13 +30,14 @@ import {
   useReorderTransitions,
 } from 'sigma/hooks/query/useWorkflow';
 import TransitionFormDialog from './TransitionFormDialog';
+import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
 
 export default function TransitionsListPage() {
   const { id: workflowId } = useParams();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
+  const showAlert = (message, severity = 'success') => setAlert({ open: true, message, severity });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const navigate = useNavigate();
@@ -70,28 +71,29 @@ export default function TransitionsListPage() {
 
   const handleSubmit = async (values) => {
     try {
-      if (editing?.privilegeCode) {
-        await updateTransitionMut({ privilegeCode: editing.privilegeCode, payload: values });
-        setSuccess('Transition mise à jour');
+      if (editing?.transitionId) {
+        await updateTransitionMut({ id: editing.transitionId, payload: { ...values, transitionId: editing.transitionId } });
+        showAlert('Transition mise à jour');
       } else {
         await createTransitionMut({ ...values, workflowId: Number(workflowId) });
-        setSuccess('Transition créée');
+        showAlert('Transition créée');
       }
       setDialogOpen(false);
+      setEditing(null);
       await refetch();
     } catch (e) {
-      setError(e?.message || "Erreur lors de l'enregistrement");
+      showAlert(e?.message || "Erreur lors de l'enregistrement", 'error');
     }
   };
 
-  const handleDelete = async (privilegeCode) => {
+  const handleDelete = async (id) => {
     if (!window.confirm('Supprimer cette transition ?')) return;
     try {
-      await deleteTransitionMut(privilegeCode);
-      setSuccess('Transition supprimée');
+      await deleteTransitionMut(id);
+      showAlert('Transition supprimée');
       await refetch();
     } catch (e) {
-      setError(e?.message || 'Erreur lors de la suppression');
+      showAlert(e?.message || 'Erreur lors de la suppression', 'error');
     }
   };
 
@@ -103,17 +105,23 @@ export default function TransitionsListPage() {
     arr[idx] = arr[newIdx];
     arr[newIdx] = tmp;
     // reassign ordre (1..N)
-    const payload = arr.map((t, i) => ({ privilegeCode: t.privilegeCode, ordre: i + 1 }));
+    const payload = arr.map((t, i) => ({ transitionId: t.transitionId, ordre: i + 1 }));
     reorderTransitionsMut(payload)
       .then(() => {
-        setSuccess('Ordre mis à jour');
+        showAlert('Ordre mis à jour');
         setItems(arr.map((t, i) => ({ ...t, ordre: i + 1 })));
       })
-      .catch((e) => setError(e?.message || "Erreur lors du réordonnancement"));
+      .catch((e) => showAlert(e?.message || "Erreur lors du réordonnancement", 'error'));
   };
 
   return (
     <Box p={2}>
+      <FloatingAlert
+        open={alert.open}
+        feedBackMessages={alert.message}
+        severity={alert.severity}
+        onClose={() => setAlert({ ...alert, open: false })}
+      />
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h4">Transitions du workflow #{workflowId}</Typography>
         <Stack direction="row" spacing={1}>
@@ -162,7 +170,7 @@ export default function TransitionsListPage() {
                   <IconButton size="small" onClick={() => handleEdit(row)} title="Éditer">
                     <EditIcon />
                   </IconButton>
-                  <IconButton size="small" color="error" onClick={() => handleDelete(row.privilegeCode)} title="Supprimer">
+                  <IconButton size="small" color="error" onClick={() => handleDelete(row.transitionId)} title="Supprimer">
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
@@ -172,7 +180,16 @@ export default function TransitionsListPage() {
         </Table>
       </TableContainer>
 
-      <TransitionFormDialog open={dialogOpen} onClose={() => setDialogOpen(false)} initialValues={editing} onSubmit={handleSubmit} />
+      <TransitionFormDialog
+        key={editing?.transitionId ? `edit-${editing.transitionId}` : `new-${dialogOpen ? 'open' : 'closed'}`}
+        open={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false);
+          setEditing(null);
+        }}
+        initialValues={editing}
+        onSubmit={handleSubmit}
+      />
 
       <Snackbar open={!!error} autoHideDuration={4000} onClose={() => setError('')} message={error} />
       <Snackbar open={!!success} autoHideDuration={2000} onClose={() => setSuccess('')} message={success} />
