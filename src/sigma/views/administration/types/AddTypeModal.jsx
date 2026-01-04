@@ -18,7 +18,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 
 // project imports
 import { gridSpacing } from 'store/constant';
-import { useCreateType, useGetAllTypeGroups } from '../../../hooks/query/useTypes';
+import { useCreateType, useGetAllTypeGroups, useTypesByGroupCode } from '../../../hooks/query/useTypes';
 import Modal from '../../../components/commons/Modal';
 import FloatingAlert from '../../../components/commons/FloatingAlert';
 import SimpleBackdrop from '../../../components/commons/SimpleBackdrop';
@@ -43,6 +43,10 @@ const AddTypeModal = ({ open, handleClose }) => {
     // Fetch type groups for dropdown
     const { data: typeGroups = [], isLoading: isLoadingGroups } = useGetAllTypeGroups();
 
+    // Parent types options depend on selected group
+    const [currentGroup, setCurrentGroup] = React.useState('');
+    const { data: typesByGroup = [], isLoading: isLoadingTypesByGroup } = useTypesByGroupCode(currentGroup);
+
     // Mutation for creating a new type
     const { mutate: createType, isPending: isCreating, isSuccess: isCreateSuccess, isError: isCreateError, error : createError } = useCreateType();
 
@@ -52,7 +56,8 @@ const AddTypeModal = ({ open, handleClose }) => {
         code: '',
         name: '',
         description: '',
-        groupCode: ''
+        groupCode: '',
+        parentTypeCodes: []
     };
 
     // Handle form submission
@@ -126,7 +131,11 @@ const AddTypeModal = ({ open, handleClose }) => {
                                             typeGroups.find((group) => group.groupCode === values.groupCode) || null
                                         }
                                         onChange={(event, newValue) => {
-                                            setFieldValue('groupCode', newValue ? newValue.groupCode : '');
+                                            const gc = newValue ? newValue.groupCode : '';
+                                            setFieldValue('groupCode', gc);
+                                            setCurrentGroup(gc);
+                                            // Reset parents if group changed
+                                            setFieldValue('parentTypeCodes', []);
                                         }}
                                         onBlur={handleBlur}
                                         loading={isLoadingGroups}
@@ -141,6 +150,37 @@ const AddTypeModal = ({ open, handleClose }) => {
                                     />
                                 </FormControl>
                             </Grid>
+                            <Grid item xs={12}>
+                                <FormControl fullWidth>
+                                    <Autocomplete
+                                        multiple
+                                        id="parentTypeCodes"
+                                        size="small"
+                                        options={isLoadingTypesByGroup ? [] : typesByGroup}
+                                        getOptionLabel={(option) => option.name || ''}
+                                        value={(values.parentTypeCodes || [])
+                                            .map(code => (typesByGroup || []).find(t => t.code === code))
+                                            .filter(Boolean)}
+                                        onChange={(event, newValue) => {
+                                            const codes = (newValue || []).map(opt => opt.code);
+                                            setFieldValue('parentTypeCodes', codes);
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Types parents"
+                                                placeholder="Sélectionner un ou plusieurs parents"
+                                            />
+                                        )}
+                                        disabled={!values.groupCode}
+                                        loading={isLoadingTypesByGroup}
+                                    />
+                                    <FormHelperText>
+                                        {(!values.groupCode) ? 'Veuillez choisir un groupe pour charger les parents' : ''}
+                                    </FormHelperText>
+                                </FormControl>
+                            </Grid>
+
                             <Grid item xs={12}>
                                 <Field
                                     size={'small'}

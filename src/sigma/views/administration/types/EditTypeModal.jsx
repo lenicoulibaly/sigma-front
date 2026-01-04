@@ -17,7 +17,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 
 // project imports
 import { gridSpacing } from 'store/constant';
-import { useUpdateType, useGetAllTypeGroups } from '../../../hooks/query/useTypes';
+import { useUpdateType, useGetAllTypeGroups, usePossibleParents } from '../../../hooks/query/useTypes';
 import Modal from '../../../components/commons/Modal';
 import FloatingAlert from '../../../components/commons/FloatingAlert';
 import SimpleBackdrop from '../../../components/commons/SimpleBackdrop';
@@ -45,8 +45,8 @@ const EditTypeModal = ({ open, handleClose, type }) => {
     // Mutation for updating a type
     const { mutate: updateType, isPending: isUpdating, isSuccess: isUpdateSuccess, isError: isUpdateError, error: updateError } = useUpdateType();
 
-    // Privilege type codes for dropdown
-
+    // Load possible parent types for the current type
+    const { data: possibleParents = [], isLoading: isLoadingPossibleParents } = usePossibleParents(type?.code);
 
     // Handle form submission
     const handleSubmit = (values, { setSubmitting }) =>
@@ -83,7 +83,8 @@ const EditTypeModal = ({ open, handleClose, type }) => {
                     code: type.code || '',
                     name: type.name || '',
                     description: type.description || '',
-                    groupCode: type.groupCode || ''
+                    groupCode: type.groupCode || '',
+                    parentTypeCodes: type.parentTypeCodes || []
                 }}
                 validationSchema={TypeSchema}
                 onSubmit={handleSubmit}
@@ -147,6 +148,32 @@ const EditTypeModal = ({ open, handleClose, type }) => {
                                                 helperText={touched.groupCode && errors.groupCode}
                                             />
                                         )}
+                                    />
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FormControl fullWidth>
+                                    <Autocomplete
+                                        multiple
+                                        id="parentTypeCodes"
+                                        size="small"
+                                        options={isLoadingPossibleParents ? [] : possibleParents}
+                                        getOptionLabel={(option) => option.name || ''}
+                                        value={(values.parentTypeCodes || [])
+                                            .map(code => (possibleParents || []).find(t => t.code === code))
+                                            .filter(Boolean)}
+                                        onChange={(event, newValue) => {
+                                            const codes = (newValue || []).map(opt => opt.code);
+                                            setFieldValue('parentTypeCodes', codes);
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                label="Types parents"
+                                                placeholder="Sélectionner un ou plusieurs parents"
+                                            />
+                                        )}
+                                        loading={isLoadingPossibleParents}
                                     />
                                 </FormControl>
                             </Grid>
