@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, {useState } from 'react';
 import PropTypes from 'prop-types';
 
 // mui
@@ -220,12 +220,14 @@ export function GenericListFilters({
                                 renderInput={(params) => (
                                     <TextField {...params} label={f.label} placeholder={f.placeholder} />
                                 )}
-                                sx={{ minWidth: 220, flexShrink: 0 }}
+                                sx={{ minWidth: { xs: '100%', sm: 220 }, flexShrink: 0 }}
                             />
                         );
                     })}
                 </Stack>
-                {AddActionBtn}
+                <Box sx={{ alignSelf: { xs: 'flex-end', sm: 'center' } }}>
+                    {AddActionBtn}
+                </Box>
             </Stack>
         </Box>
     );
@@ -247,6 +249,9 @@ export function GenericDataTable({
     const cellSx = (col) => {
         if (!col) return undefined;
         const width = col.width;
+        const baseSx = {
+            ...(col.sx || {})
+        };
         if (width !== undefined && width !== null && width !== '') {
             return {
                 width,
@@ -254,10 +259,13 @@ export function GenericDataTable({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                ...(col.sx || {})
+                ...baseSx
             };
         }
-        return col.sx;
+        return {
+            whiteSpace: 'nowrap',
+            ...baseSx
+        };
     };
 
     // Feedback & confirmation for row actions
@@ -329,10 +337,14 @@ export function GenericDataTable({
                     <Typography>Aucun élément trouvé.</Typography>
                 </Box>
             ) : (
-                <TableContainer sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                <TableContainer sx={{ border: 1, borderColor: 'divider', borderRadius: 1, overflowX: 'auto' }}>
                     <Table 
                         size={tableProps.size || 'small'}
-                        sx={{ ...(tableProps.sx || {}), tableLayout: fixedLayoutEnabled ? 'fixed' : (tableProps?.sx?.tableLayout || undefined) }}
+                        sx={{ 
+                            ...(tableProps.sx || {}), 
+                            tableLayout: fixedLayoutEnabled ? 'fixed' : (tableProps?.sx?.tableLayout || undefined),
+                            minWidth: fixedLayoutEnabled ? 'auto' : 650
+                        }}
                     >
                         {fixedLayoutEnabled && (
                             <colgroup>

@@ -30,12 +30,12 @@ export default function StatusGroupsTab({
 
       <GenericDataTable
         columns={[
-          { header: 'Code', field: 'code', width: 150 },
-          { header: 'Nom', field: 'name', width: '25%' },
-          { header: 'Description', field: 'description', width: '35%' },
+          { header: 'Code', field: 'code', width: 120 },
+          { header: 'Nom', field: 'name', width: 200 },
+          { header: 'Description', field: 'description', width: 250 },
           {
             header: 'Couleur',
-            width: 140,
+            width: 100,
             render: (row) => (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 18, height: 18, borderRadius: '3px', bgcolor: row?.color || 'transparent', border: '1px solid', borderColor: (theme) => theme.palette.divider }} />
@@ -43,8 +43,8 @@ export default function StatusGroupsTab({
               </Box>
             )
           },
-          { header: 'Nb. statuts', render: (row) => Array.isArray(row.statusIds) ? row.statusIds.length : (row.statusCount ?? ''), width: 130 },
-          { header: 'Nb. autorités', render: (row) => Array.isArray(row.authorityCodes) ? row.authorityCodes.length : (row.authoritiesCount ?? ''), width: 150 }
+          { header: 'Nb. statuts', render: (row) => Array.isArray(row.statusIds) ? row.statusIds.length : (row.statusCount ?? ''), width: 100 },
+          { header: 'Nb. autorités', render: (row) => Array.isArray(row.authorityCodes) ? row.authorityCodes.length : (row.authoritiesCount ?? ''), width: 100 }
         ]}
         rows={controller.rows}
         getRowId={(row) => row.id}

@@ -35,13 +35,13 @@ export default function TransitionsTab({
 
       <GenericDataTable
         columns={[
-          { header: 'Ordre', field: 'ordre', width: 80 },
-          { header: 'Libellé', field: 'libelle', width: '35%' },
-          { header: 'Statut origine', field: 'statutOrigineName' },
-          { header: 'Statut destination (défaut)', field: 'defaultStatutDestinationName' },
+          { header: 'Ordre', field: 'ordre', width: 60 },
+          { header: 'Libellé', field: 'libelle', width: 250 },
+          { header: 'Statut origine', field: 'statutOrigineName', width: 200 },
+          { header: 'Statut destination (défaut)', field: 'defaultStatutDestinationName', width: 200 },
           {
             header: 'Couleur',
-            width: 140,
+            width: 100,
             render: (row) => (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 18, height: 18, borderRadius: '3px', bgcolor: row?.color || 'transparent', border: '1px solid', borderColor: (theme) => theme.palette.divider }} />
@@ -51,7 +51,7 @@ export default function TransitionsTab({
           },
           {
             header: 'Icône',
-            width: 120,
+            width: 80,
             render: (row) => (row?.icon ? <IconByName name={row.icon} fontSize="small" htmlColor={row?.color} sx={{ color: row?.color }} /> : null)
           }
         ]}

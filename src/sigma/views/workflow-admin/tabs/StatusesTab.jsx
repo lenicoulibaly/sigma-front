@@ -30,11 +30,11 @@ export default function StatusesTab({
 
       <GenericDataTable
         columns={[
-          { header: 'Ordre', field: 'ordre', width: 100 },
-          { header: 'Statut', field: 'statusName', width: '20%' },
+          { header: 'Ordre', field: 'ordre', width: 80 },
+          { header: 'Statut', field: 'statusName', width: 250 },
           {
             header: 'Couleur',
-            width: 140,
+            width: 100,
             render: (row) => (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box sx={{ width: 18, height: 18, borderRadius: '3px', bgcolor: row?.color || 'transparent', border: '1px solid', borderColor: (theme) => theme.palette.divider }} />
@@ -44,11 +44,11 @@ export default function StatusesTab({
           },
           {
             header: 'Icône',
-            width: 120,
+            width: 80,
             render: (row) => (row?.icon ? <IconByName name={row.icon} fontSize="small" htmlColor={row?.color} sx={{ color: row?.color }} /> : null)
           },
-          { header: 'Début', render: (row) => (row.start ? 'Oui' : 'Non'), width: 120 },
-          { header: 'Fin', render: (row) => (row.end ? 'Oui' : 'Non'), width: 120 }
+          { header: 'Début', render: (row) => (row.start ? 'Oui' : 'Non'), width: 100 },
+          { header: 'Fin', render: (row) => (row.end ? 'Oui' : 'Non'), width: 100 }
         ]}
         rows={controller.rows}
         getRowId={(row) => row.id ?? row.statusCode}
