@@ -9,6 +9,7 @@ const TYPES_KEYS = {
     byGroup: (groupCode) => [...TYPES_KEYS.all, 'byGroup', groupCode],
     directSousTypes: (params) => [...TYPES_KEYS.all, 'directSousTypes', { ...params }],
     possibleSousTypes: (params) => [...TYPES_KEYS.all, 'possibleSousTypes', { ...params }],
+    possibleParents: (typeCode) => [...TYPES_KEYS.all, 'possibleParents', typeCode],
 };
 
 const TYPE_GROUPS_KEYS = {
@@ -44,6 +45,14 @@ export const usePossibleSousTypes = (params = {}) => {
     return useQuery({
         queryKey: TYPES_KEYS.possibleSousTypes(params),
         queryFn: () => typeApi.getPossibleSousTypes(params),
+    });
+};
+
+export const usePossibleParents = (typeCode) => {
+    return useQuery({
+        queryKey: TYPES_KEYS.possibleParents(typeCode),
+        queryFn: () => typeApi.getPossibleParents(typeCode),
+        enabled: !!typeCode,
     });
 };
 

@@ -310,6 +310,10 @@ export const typeApi = {
         const response = await apiClient.get(`/types/possible-sous-types?${queryString}`);
         return response.data;
     },
+    getPossibleParents: async (typeCode) => {
+        const response = await apiClient.get(`/types/possible-parents`, { params: { typeCode } });
+        return response.data;
+    },
 
     // Gestion sous-types
     setSousTypes: async (sousTypesData) => {
