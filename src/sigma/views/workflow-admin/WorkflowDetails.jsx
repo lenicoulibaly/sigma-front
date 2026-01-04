@@ -8,17 +8,7 @@ import {
   Tab,
   Typography,
   IconButton,
-  Tooltip,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Paper,
-  Button,
-  CircularProgress,
-  OutlinedInput,
-  InputAdornment,
+  Tooltip
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
@@ -52,38 +42,6 @@ const tabsOption = [
   { label: 'Liste des transitions', icon: <TransformIcon sx={{ fontSize: '1.3rem' }} /> }
 ];
 
-// Simple modal for adding/editing a workflow status (étape)
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
-function StepFormDialog({ open, onClose, initialValues, onSubmit }) {
-  const [values, setValues] = useState({ statusCode: '', ordre: '', start: false, end: false, regulatoryDurationValue: '', regulatoryDurationUnitCode: '' });
-  useEffect(() => {
-    setValues({
-      statusCode: initialValues?.statusCode || '',
-      ordre: initialValues?.ordre ?? '',
-      start: !!initialValues?.start,
-      end: !!initialValues?.end,
-      regulatoryDurationValue: initialValues?.regulatoryDurationValue ?? '',
-      regulatoryDurationUnitCode: initialValues?.regulatoryDurationUnitCode || ''
-    });
-  }, [initialValues]);
-  const handleChange = (field) => (e) => setValues((v) => ({ ...v, [field]: e.target.value }));
-  const handleSubmit = () => { if (!values.statusCode) return; onSubmit && onSubmit(values); };
-  return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Nouvelle étape</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <TextField label="Code statut" value={values.statusCode} onChange={handleChange('statusCode')} required />
-          <TextField label="Ordre" type="number" value={values.ordre} onChange={handleChange('ordre')} />
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Annuler</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={!values.statusCode}>Enregistrer</Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
 
 export default function WorkflowDetails() {
   const { id } = useParams();

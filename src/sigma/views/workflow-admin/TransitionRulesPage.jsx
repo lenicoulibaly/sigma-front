@@ -12,7 +12,6 @@ import {
   ListItemButton,
   ListItemText,
   Paper,
-  Snackbar,
   Stack,
   TextField,
   Typography

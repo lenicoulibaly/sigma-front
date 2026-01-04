@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Button, Stack, TextField } from '@mui/material';
 
-export default function JsonEditor({ value, onChange, minRows = 12, label = 'JSON', error, helperText }) {
+export default function JsonEditor({ value, onChange, minRows = 12, label = 'JSON', error, helperText, actions }) {
   const [text, setText] = useState(typeof value === 'string' ? value : JSON.stringify(value || {}, null, 2));
 
   useEffect(() => {
@@ -40,8 +40,13 @@ export default function JsonEditor({ value, onChange, minRows = 12, label = 'JSO
         helperText={helperText}
         InputProps={{ sx: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' } }}
       />
-      <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Button size="small" variant="outlined" onClick={handleFormat}>Formater</Button>
+        {actions && (
+          <Stack direction="row" spacing={1}>
+            {actions}
+          </Stack>
+        )}
       </Box>
     </Stack>
   );

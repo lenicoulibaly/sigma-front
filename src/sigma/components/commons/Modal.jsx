@@ -5,7 +5,6 @@ import {
     IconButton,
     DialogContent,
     DialogActions,
-    Grid,
     Tooltip,
     useTheme,
     Box
@@ -78,15 +77,11 @@ const Modal = ({ open, printVisible=false, newVisible=false,
                     </StyledCloseButton>
                 )}
             </StyledDialogTitle>
-            <DialogContent dividers>
-                <Grid container spacing={gridSpacing}>
-                    <Grid item xs={12}>
-                        {children}
-                    </Grid>
-                </Grid>
+            <DialogContent dividers sx={{ pt: 1, pb: 1, px: 2 }}>
+                {children}
             </DialogContent>
             {(actions || actionVisible) && (
-                <DialogActions>
+                <DialogActions sx={{ py: 1, px: 2 }}>
                     {actions ? (
                         actions
                     ) : (

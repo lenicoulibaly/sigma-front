@@ -5,7 +5,6 @@ import {
   Button,
   IconButton,
   Paper,
-  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -19,7 +18,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import RuleIcon from '@mui/icons-material/Rule';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import {
@@ -139,17 +138,15 @@ export default function TransitionsListPage() {
             <TableRow>
               <TableCell>Ordre</TableCell>
               <TableCell>Privilege</TableCell>
-              <TableCell>Code</TableCell>
               <TableCell>Libellé</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {sortedItems.map((row, idx) => (
-              <TableRow key={row.privilegeCode} hover>
+              <TableRow key={row.transitionId ?? row.privilegeCode} hover>
                 <TableCell>{row.ordre}</TableCell>
                 <TableCell>{row.privilegeCode}</TableCell>
-                <TableCell>{row.code}</TableCell>
                 <TableCell>{row.libelle}</TableCell>
                 <TableCell align="right">
                   <IconButton size="small" onClick={() => move(idx, -1)} title="Monter">
@@ -158,10 +155,10 @@ export default function TransitionsListPage() {
                   <IconButton size="small" onClick={() => move(idx, +1)} title="Descendre">
                     <ArrowDownwardIcon />
                   </IconButton>
-                  <IconButton size="small" color="primary" onClick={() => navigate(`/admin/transitions/${row.privilegeCode}/rules`)} title="Règles">
-                    <RuleIcon />
+                  <IconButton size="small" color="primary" onClick={() => navigate(`/admin/transitions/${row.transitionId}/rules`)} title="Règles">
+                    <FactCheckIcon />
                   </IconButton>
-                  <IconButton size="small" color="secondary" onClick={() => navigate(`/admin/transitions/${row.privilegeCode}/validation`)} title="Validation">
+                  <IconButton size="small" color="secondary" onClick={() => navigate(`/admin/transitions/${row.transitionId}/validation`)} title="Validation">
                     <VerifiedUserIcon />
                   </IconButton>
                   <IconButton size="small" color="success" onClick={() => navigate('/admin/workflow-exec-test')} title="Tester exécution">

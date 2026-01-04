@@ -6,9 +6,7 @@ import WorkflowsListPage from './WorkflowsListPage';
 // Provides a MainCard container and delegates the list + actions to WorkflowsListPage
 const WorkflowsManagement = () => {
   return (
-    <MainCard title="Gestion des workflows">
       <WorkflowsListPage />
-    </MainCard>
   );
 };
 
