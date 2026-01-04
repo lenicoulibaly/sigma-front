@@ -24,8 +24,8 @@ import InfoIcon from '@mui/icons-material/Info';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import TransformIcon from '@mui/icons-material/Transform';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import AddIcon from '@mui/icons-material/Add';
-import { IconSearch } from '@tabler/icons-react';
+import RuleIcon from '@mui/icons-material/Rule';
+import { useQueryClient } from '@tanstack/react-query';
 
 import MainCard from 'ui-component/cards/MainCard';
 import { gridSpacing } from 'store/constant';
@@ -43,7 +43,8 @@ function TabPanel({ children, value, index, ...other }) {
 
 const tabsOption = [
   { label: 'Détails', icon: <InfoIcon sx={{ fontSize: '1.3rem' }} /> },
-  { label: 'Liste des étapes', icon: <AccountTreeIcon sx={{ fontSize: '1.3rem' }} /> },
+  { label: 'Liste des statuts', icon: <AccountTreeIcon sx={{ fontSize: '1.3rem' }} /> },
+  { label: 'Groupes de statuts', icon: <RuleIcon sx={{ fontSize: '1.3rem' }} /> },
   { label: 'Liste des transitions', icon: <TransformIcon sx={{ fontSize: '1.3rem' }} /> }
 ];
 
@@ -92,19 +93,19 @@ export default function WorkflowDetails() {
 
   const [openTransitionDialog, setOpenTransitionDialog] = useState(false);
   const [editingTransition, setEditingTransition] = useState(null);
+  const [transitionDefaultStep, setTransitionDefaultStep] = useState(0);
 
   const [stepDialogOpen, setStepDialogOpen] = useState(false);
   const [editingStep, setEditingStep] = useState(null);
 
-  // Server-side search + pagination for statuses (Étapes)
-  const [statusPage, setStatusPage] = useState(0);
-  const [statusPageSize, setStatusPageSize] = useState(10);
-  const [statusKey, setStatusKey] = useState('');
+  // Status groups dialog state
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState(null);
 
-  // Server-side search + pagination for transitions
-  const [transPage, setTransPage] = useState(0);
-  const [transPageSize, setTransPageSize] = useState(10);
-  const [transKey, setTransKey] = useState('');
+    // Feedback alert state
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertSeverity, setAlertSeverity] = useState('info');
 
   const { data: wf, isLoading: wfLoading, refetch: refetchWf } = useWorkflow(id);
   const { data: transData, isLoading: transLoading, refetch: refetchTrans } = useSearchTransitionsByWorkflow(
@@ -115,6 +116,25 @@ export default function WorkflowDetails() {
     { workflowId: id, key: statusKey || undefined, page: statusPage, size: statusPageSize },
     { enabled: value === 1 && !!id }
   );
+
+  // Controllers for generic lists
+  const statusesController = useGenericListController({
+    queryHook: (params) => useSearchWorkflowStatuses({ ...params, workflowId: id }, { enabled: value === 1 && !!id }),
+    dropdownFilters: [],
+    paramMapper: ({ page, size, search }) => ({ page, size, key: search || undefined, workflowId: id })
+  });
+
+  const transitionsController = useGenericListController({
+    queryHook: (params) => useSearchTransitionsByWorkflow({ ...params, workflowId: id }, { enabled: value === 3 && !!id }),
+    dropdownFilters: [],
+    paramMapper: ({ page, size, search }) => ({ page, size, key: search || undefined, workflowId: id })
+  });
+
+  const statusGroupsController = useGenericListController({
+    queryHook: (params) => useSearchWorkflowStatusGroups({ ...params }, { enabled: value === 2 }),
+    dropdownFilters: [],
+    paramMapper: ({ page, size, search }) => ({ page, size, key: search || undefined })
+  });
 
   useEffect(() => {
     setLoading(wfLoading);
@@ -128,7 +148,16 @@ export default function WorkflowDetails() {
   const handleBack = () => {
     const listParams = location.state?.listParams;
     if (listParams) {
-      navigate('/admin/workflows', { state: { restore: listParams } });
+      navigate('/admin/workflows', {
+        state: {
+          restore: {
+            page: listParams.page,
+            size: listParams.size,
+            search: listParams.search,
+            filters: listParams.filters
+          }
+        }
+      });
     } else {
       navigate('/admin/workflows');
     }
@@ -137,38 +166,195 @@ export default function WorkflowDetails() {
 
 
   // Steps actions (create minimal: add new status by updating workflow)
-  const addStep = () => { setEditingStep(null); setStepDialogOpen(true); };
+  const queryClient = useQueryClient();
   const { mutateAsync: updateWorkflowMut } = useUpdateWorkflow();
-  const submitStep = async (values) => {
+  const addStep = () => { setEditingStep(null); setStepDialogOpen(true); };
+  const onEditStep = (row) => {
+    // Find full item from workflow.statuses if available to prefill all fields
     const current = Array.isArray(workflow?.statuses) ? workflow.statuses : [];
-    const newItem = {
-      statusCode: values.statusCode,
-      ordre: values.ordre !== '' ? parseInt(values.ordre, 10) : (current.length + 1),
-      start: !!values.start,
-      end: !!values.end,
-      regulatoryDurationValue: values.regulatoryDurationValue !== '' ? parseInt(values.regulatoryDurationValue, 10) : undefined,
-      regulatoryDurationUnitCode: values.regulatoryDurationUnitCode || undefined
-    };
-    const payload = { ...workflow, statuses: [...current, newItem] };
-    await updateWorkflowMut({ id: workflow.id, payload });
-    setStepDialogOpen(false);
-    await refetchWf();
-    // refresh paginated statuses list
-    await refetchStatuses();
+    const found = current.find((s) => s.statusCode === row.statusCode) || row || {};
+    setEditingStep({
+      originalStatusCode: row.statusCode,
+      statusCode: found.statusCode,
+      ordre: found.ordre ?? row.ordre ?? '',
+      start: !!(found.start ?? row.start),
+      end: !!(found.end ?? row.end),
+      regulatoryDurationValue: found.regulatoryDurationValue ?? row.regulatoryDurationValue ?? '',
+      regulatoryDurationUnitCode: found.regulatoryDurationUnitCode ?? row.regulatoryDurationUnitCode ?? '',
+      color: found.color || row.color || '#2196f3',
+      icon: found.icon || row.icon || ''
+    });
+    setStepDialogOpen(true);
+  };
+  const onDeleteStep = async (row) => {
+    if (!workflow) return;
+    try {
+      const current = Array.isArray(workflow?.statuses) ? workflow.statuses : [];
+      const filtered = current.filter((s) => s.statusCode !== row.statusCode);
+      const payload = { ...workflow, statuses: filtered };
+      await updateWorkflowMut({ id: workflow.id, payload });
+      await refetchWf();
+      queryClient.invalidateQueries({ queryKey: WORKFLOW_STATUS_QUERY_KEYS.all });
+      setAlertMessage('Étape supprimée avec succès');
+      setAlertSeverity('success');
+      setAlertOpen(true);
+    } catch (e) {
+      const msg = e?.response?.data || e?.message || "Erreur lors de la suppression de l'étape";
+      setAlertMessage(msg);
+      setAlertSeverity('error');
+      setAlertOpen(true);
+    }
+  };
+  const submitStep = async (values) => {
+    try {
+      const current = Array.isArray(workflow?.statuses) ? workflow.statuses : [];
+      const newItem = {
+        statusCode: values.statusCode,
+        ordre: values.ordre !== '' ? parseInt(values.ordre, 10) : undefined,
+        start: !!values.start,
+        end: !!values.end,
+        regulatoryDurationValue: values.regulatoryDurationValue !== '' ? parseInt(values.regulatoryDurationValue, 10) : undefined,
+        regulatoryDurationUnitCode: values.regulatoryDurationUnitCode || undefined,
+        color: values.color || undefined,
+        icon: values.icon || undefined
+      };
+
+      let nextStatuses = [];
+      const isEdit = !!(editingStep && (editingStep.originalStatusCode || editingStep.statusCode));
+      if (isEdit) {
+        const idx = current.findIndex((s) => s.statusCode === (editingStep.originalStatusCode || editingStep.statusCode));
+        if (idx >= 0) {
+          const prev = current[idx];
+          const ordre = newItem.ordre !== undefined ? newItem.ordre : (prev?.ordre ?? idx + 1);
+          nextStatuses = current.map((s, i) => i === idx ? { ...prev, ...newItem, ordre } : s);
+        } else {
+          // if not found, append with sensible ordre
+          nextStatuses = [...current, { ...newItem, ordre: newItem.ordre !== undefined ? newItem.ordre : (current.length + 1) }];
+        }
+      } else {
+        // create
+        const ordre = newItem.ordre !== undefined ? newItem.ordre : (current.length + 1);
+        nextStatuses = [...current, { ...newItem, ordre }];
+      }
+
+      const payload = { ...workflow, statuses: nextStatuses };
+      await updateWorkflowMut({ id: workflow.id, payload });
+      setStepDialogOpen(false);
+      setEditingStep(null);
+      await refetchWf();
+      // Invalidate statuses search caches so the list refreshes
+      queryClient.invalidateQueries({ queryKey: WORKFLOW_STATUS_QUERY_KEYS.all });
+      setAlertMessage(isEdit ? 'Étape mise à jour avec succès' : 'Étape ajoutée avec succès');
+      setAlertSeverity('success');
+      setAlertOpen(true);
+    } catch (e) {
+      const msg = e?.response?.data || e?.message || "Erreur lors de l'enregistrement de l'étape";
+      setAlertMessage(msg);
+      setAlertSeverity('error');
+      setAlertOpen(true);
+    }
   };
 
   // Transitions actions
-  const addTransition = () => { setEditingTransition({ workflowId: Number(id) }); setOpenTransitionDialog(true); };
+  const addTransition = () => { 
+    setEditingTransition({ workflowId: Number(id) }); 
+    setTransitionDefaultStep(0);
+    setOpenTransitionDialog(true); 
+  };
+  const onEditTransition = (row) => { 
+    setEditingTransition({ ...row, workflowId: Number(id) }); 
+    setTransitionDefaultStep(0);
+    setOpenTransitionDialog(true); 
+  };
+  const onShowRules = (row) => { 
+    setEditingTransition({ ...row, workflowId: Number(id) }); 
+    setTransitionDefaultStep(1);
+    setOpenTransitionDialog(true); 
+  };
+  const onShowSideEffects = (row) => { 
+    setEditingTransition({ ...row, workflowId: Number(id) }); 
+    setTransitionDefaultStep(2);
+    setOpenTransitionDialog(true); 
+  };
   const { mutateAsync: createTransitionMut } = useCreateTransition();
   const { mutateAsync: updateTransitionMut } = useUpdateTransition();
-  const submitTransition = async (values) => {
-    if (editingTransition?.privilegeCode) {
-      await updateTransitionMut({ privilegeCode: editingTransition.privilegeCode, payload: values });
-    } else {
-      await createTransitionMut({ ...values, workflowId: Number(id) });
+  const { mutateAsync: deleteTransitionMut } = useDeleteTransition();
+  const onDeleteTransition = async (row) => {
+    try {
+      await deleteTransitionMut(row?.transitionId);
+      setAlertMessage('Transition supprimée avec succès');
+      setAlertSeverity('success');
+      setAlertOpen(true);
+      queryClient.invalidateQueries({ queryKey: TRANSITION_QUERY_KEYS.all });
+    } catch (e) {
+      const msg = e?.response?.data || e?.message || "Erreur lors de la suppression de la transition";
+      setAlertMessage(msg);
+      setAlertSeverity('error');
+      setAlertOpen(true);
     }
-    setOpenTransitionDialog(false);
-    await refetchTrans();
+  };
+  const submitTransition = async (values) => {
+    try {
+      if (editingTransition?.transitionId) {
+        await updateTransitionMut({ id: editingTransition.transitionId, payload: values });
+        setAlertMessage('Transition mise à jour avec succès');
+      } else {
+        await createTransitionMut({ ...values, workflowId: Number(id) });
+        setAlertMessage('Transition créée avec succès');
+      }
+      setAlertSeverity('success');
+      setAlertOpen(true);
+      setOpenTransitionDialog(false);
+      // Invalidate transitions caches for fresh data
+      queryClient.invalidateQueries({ queryKey: TRANSITION_QUERY_KEYS.all });
+    } catch (e) {
+      const msg = e?.response?.data || e?.message || "Erreur lors de l'enregistrement de la transition";
+      setAlertMessage(msg);
+      setAlertSeverity('error');
+      setAlertOpen(true);
+    }
+  };
+
+  // Status groups actions
+  const addGroup = () => { setEditingGroup(null); setGroupDialogOpen(true); };
+  const onEditGroup = (row) => { setEditingGroup(row); setGroupDialogOpen(true); };
+  const { mutateAsync: createGroupMut } = useCreateWorkflowStatusGroup();
+  const { mutateAsync: updateGroupMut } = useUpdateWorkflowStatusGroup();
+  const { mutateAsync: deleteGroupMut } = useDeleteWorkflowStatusGroup();
+
+  const onDeleteGroup = async (row) => {
+    try {
+      await deleteGroupMut(row?.id);
+      setAlertMessage('Groupe supprimé avec succès');
+      setAlertSeverity('success');
+      setAlertOpen(true);
+    } catch (e) {
+      const msg = e?.response?.data || e?.message || "Erreur lors de la suppression du groupe";
+      setAlertMessage(msg);
+      setAlertSeverity('error');
+      setAlertOpen(true);
+    }
+  };
+
+  const submitGroup = async (values) => {
+    try {
+      if (editingGroup?.id) {
+        await updateGroupMut({ id: editingGroup.id, dto: values });
+        setAlertMessage('Groupe mis à jour avec succès');
+      } else {
+        await createGroupMut(values);
+        setAlertMessage('Groupe créé avec succès');
+      }
+      setAlertSeverity('success');
+      setAlertOpen(true);
+      setGroupDialogOpen(false);
+      setEditingGroup(null);
+    } catch (e) {
+      const msg = e?.response?.data || e?.message || "Erreur lors de l'enregistrement du groupe";
+      setAlertMessage(msg);
+      setAlertSeverity('error');
+      setAlertOpen(true);
+    }
   };
 
   return (
@@ -189,159 +375,67 @@ export default function WorkflowDetails() {
         <Grid item xs={12}>
           <Tabs value={value} indicatorColor="primary" textColor="primary" onChange={handleChange} aria-label="workflow tabs" variant="scrollable">
             {tabsOption.map((tab, index) => (
-              <Tab key={index} label={tab.label} icon={tab.icon} iconPosition="start" id={`workflow-tab-${index}`} aria-controls={`workflow-tabpanel-${index}`} />
+              <Tab key={index} label={tab.label} icon={tab.icon} iconPosition="start" id={`workflow-tab-${index}`} aria-controls={`workflow-tabpanel-${index}`} sx={{ textTransform: 'none' }} />
             ))}
           </Tabs>
         </Grid>
         <Grid item xs={12}>
           <TabPanel value={value} index={0}>
-            {loading ? (
-              <Box p={2} textAlign="center"><CircularProgress size={24} /></Box>
-            ) : workflow ? (
-              <Box sx={{ p: 2 }}>
-                <Typography variant="subtitle1">Code: {workflow.code}</Typography>
-                <Typography variant="subtitle1">Libellé: {workflow.libelle}</Typography>
-                <Typography variant="subtitle1">Table cible: {workflow.targetTableNameCode}</Typography>
-                <Typography variant="subtitle1">Actif: {workflow.active ? 'Oui' : 'Non'}</Typography>
-              </Box>
-            ) : null}
+            <DetailsTab loading={loading} workflow={workflow} />
           </TabPanel>
 
           <TabPanel value={value} index={1}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-              {/* Search input replaces the title */}
-              <OutlinedInput
-                value={statusKey}
-                onChange={(e) => { setStatusKey(e.target.value); setStatusPage(0); }}
-                placeholder="Rechercher une étape (code)"
-                startAdornment={<InputAdornment position="start"><IconSearch size={18} /></InputAdornment>}
-                size="small"
-                sx={{ maxWidth: 360, flex: 1 }}
-              />
-              <Tooltip title="Ajouter une étape" placement="left" arrow>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={addStep}
-                  sx={{ minWidth: '40px', width: 40, height: 40, p: 0, ml: 1 }}
-                >
-                  <AddIcon />
-                </Button>
-              </Tooltip>
-            </Stack>
-            <Paper variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Ordre</TableCell>
-                    <TableCell>Code Statut</TableCell>
-                    <TableCell>Début</TableCell>
-                    <TableCell>Fin</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {statusLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center"><CircularProgress size={20} /></TableCell>
-                    </TableRow>
-                  ) : ((statusData?.content || []).length > 0 ? (
-                    (statusData?.content || []).map((s, idx) => (
-                      <TableRow key={`${s.id || s.statusCode}-${idx}`}>
-                        <TableCell>{s.ordre}</TableCell>
-                        <TableCell>{s.statusCode}</TableCell>
-                        <TableCell>{s.start ? 'Oui' : 'Non'}</TableCell>
-                        <TableCell>{s.end ? 'Oui' : 'Non'}</TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">Aucune étape</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Paper>
-            {/* Pagination for statuses */}
-            <Pagination
-              count={statusData?.totalPages ?? 0}
-              page={statusData?.number ?? statusPage}
-              onPageChange={(newPage) => setStatusPage(newPage)}
-              rowsPerPage={statusPageSize}
-              onRowsPerPageChange={(size) => { setStatusPageSize(size); setStatusPage(0); }}
-              totalCount={statusData?.totalElements ?? 0}
+            <StatusesTab
+              controller={statusesController}
+              addStep={addStep}
+              onEditStep={onEditStep}
+              onDeleteStep={onDeleteStep}
+              stepDialogOpen={stepDialogOpen}
+              closeStepDialog={() => { setStepDialogOpen(false); setEditingStep(null); }}
+              editingStep={editingStep}
+              submitStep={submitStep}
             />
-            {/* Add dialog */}
-            {stepDialogOpen && (
-              <StepFormDialog
-                open={stepDialogOpen}
-                onClose={() => setStepDialogOpen(false)}
-                initialValues={{}}
-                onSubmit={(vals) => submitStep(vals)}
-              />
-            )}
           </TabPanel>
 
           <TabPanel value={value} index={2}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-              {/* Search input replaces the title */}
-              <OutlinedInput
-                value={transKey}
-                onChange={(e) => { setTransKey(e.target.value); setTransPage(0); }}
-                placeholder="Rechercher une transition (code, libellé, privilège)"
-                startAdornment={<InputAdornment position="start"><IconSearch size={18} /></InputAdornment>}
-                size="small"
-                sx={{ maxWidth: 360, flex: 1 }}
-              />
-              <Tooltip title="Ajouter une transition" placement="left" arrow>
-                <Button color="primary" variant={'contained'} size="small" onClick={addTransition} sx={{ minWidth: 40, width: 40, height: 40, ml: 1 }}>
-                  <AddIcon />
-                </Button>
-              </Tooltip>
-            </Stack>
-            <Paper variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Ordre</TableCell>
-                    <TableCell>Privilege</TableCell>
-                    <TableCell>Code</TableCell>
-                    <TableCell>Libellé</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {transLoading ? (
-                    <TableRow><TableCell colSpan={4} align="center"><CircularProgress size={20} /></TableCell></TableRow>
-                  ) : ((transData?.content || []).length > 0 ? (
-                    (transData?.content || []).map((t) => (
-                      <TableRow key={t.privilegeCode}>
-                        <TableCell>{t.ordre}</TableCell>
-                        <TableCell>{t.privilegeCode}</TableCell>
-                        <TableCell>{t.code}</TableCell>
-                        <TableCell>{t.libelle}</TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">Aucune transition</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Paper>
-            {/* Pagination for transitions */}
-            <Pagination
-              count={transData?.totalPages ?? 0}
-              page={transData?.number ?? transPage}
-              onPageChange={(newPage) => setTransPage(newPage)}
-              rowsPerPage={transPageSize}
-              onRowsPerPageChange={(size) => { setTransPageSize(size); setTransPage(0); }}
-              totalCount={transData?.totalElements ?? 0}
+            <StatusGroupsTab
+              controller={statusGroupsController}
+              addGroup={addGroup}
+              onEditGroup={onEditGroup}
+              onDeleteGroup={onDeleteGroup}
+              groupDialogOpen={groupDialogOpen}
+              closeGroupDialog={() => { setGroupDialogOpen(false); setEditingGroup(null); }}
+              editingGroup={editingGroup}
+              submitGroup={submitGroup}
+              workflowId={id}
             />
+          </TabPanel>
 
-            <TransitionFormDialog open={openTransitionDialog} onClose={() => setOpenTransitionDialog(false)} initialValues={editingTransition} onSubmit={submitTransition} />
+          <TabPanel value={value} index={3}>
+            <TransitionsTab
+              controller={transitionsController}
+              addTransition={addTransition}
+              onEditTransition={onEditTransition}
+              onShowRules={onShowRules}
+              onShowSideEffects={onShowSideEffects}
+              onDeleteTransition={onDeleteTransition}
+              openTransitionDialog={openTransitionDialog}
+              closeTransitionDialog={() => setOpenTransitionDialog(false)}
+              editingTransition={editingTransition}
+              transitionDefaultStep={transitionDefaultStep}
+              submitTransition={submitTransition}
+            />
           </TabPanel>
         </Grid>
       </Grid>
+
+      {/* Floating feedback alert for all mutations in this page */}
+      <FloatingAlert
+        open={alertOpen}
+        feedBackMessages={alertMessage}
+        severity={alertSeverity}
+        onClose={() => setAlertOpen(false)}
+      />
     </MainCard>
   );
 }
