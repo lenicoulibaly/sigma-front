@@ -731,11 +731,11 @@ const MainRoutes = {
             element: <SigmaTransitionsListPage />
         },
         {
-            path: '/admin/transitions/:privilegeCode/rules',
+            path: '/admin/transitions/:transitionId/rules',
             element: <SigmaTransitionRulesPage />
         },
         {
-            path: '/admin/transitions/:privilegeCode/validation',
+            path: '/admin/transitions/:transitionId/validation',
             element: <SigmaTransitionValidationConfigPage />
         },
         {
