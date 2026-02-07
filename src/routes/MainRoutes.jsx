@@ -29,9 +29,13 @@ const SigmaWorkflowDetailsPage = Loadable(lazy(() => import('src/sigma/views/wor
 const AssociationsManagement = Loadable(lazy(() => import('src/sigma/views/business/associations')));
 const AssociationDetails = Loadable(lazy(() => import('src/sigma/views/business/associations/AssociationDetails')));
 const SectionsManagement = Loadable(lazy(() => import('src/sigma/views/business/sections')));
+const DemandeAdhesionList = Loadable(lazy(() => import('src/sigma/views/business/demandes-adhesion/DemandeAdhesionList')));
+const UserDemandesAdhesionList = Loadable(lazy(() => import('src/sigma/views/business/demandes-adhesion/UserDemandesAdhesionList')));
+const DemandeAdhesionDetails = Loadable(lazy(() => import('src/sigma/views/business/demandes-adhesion/DemandeAdhesionDetails')));
 
 // examples
 const SigmaGenericListDemo = Loadable(lazy(() => import('src/sigma/views/examples/GenericListDemo')));
+const SigmaWorkflowComponentsDemo = Loadable(lazy(() => import('src/sigma/views/examples/WorkflowComponentsDemo')));
 
 // dashboard routing
 const DashboardDefault = Loadable(lazy(() => import('views/dashboard/Default')));
@@ -768,6 +772,10 @@ const MainRoutes = {
             element: <SigmaGenericListDemo />
         },
         {
+            path: '/examples/workflow-components',
+            element: <SigmaWorkflowComponentsDemo />
+        },
+        {
             path: '/administration/user-profiles',
             element: <UserProfiles />
         },
@@ -788,6 +796,18 @@ const MainRoutes = {
         {
             path: '/associations/sections',
             element: <SectionsManagement />
+        },
+        {
+            path: '/business/demandes-adhesion/list',
+            element: <DemandeAdhesionList />
+        },
+        {
+            path: '/business/demandes-adhesion/my-list',
+            element: <UserDemandesAdhesionList />
+        },
+        {
+            path: '/business/demandes-adhesion/:id',
+            element: <DemandeAdhesionDetails />
         }
     ]
 };

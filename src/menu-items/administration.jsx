@@ -105,6 +105,14 @@ const administration = {
             icon: icons.IconCategory,
             url: '/examples/generic-list',
             tooltip: "Démonstration du composant de liste paginée et filtrable"
+        },
+        {
+            id: 'workflow-components-demo',
+            title: 'Démo Composants Workflow',
+            type: 'item',
+            icon: icons.IconCategory,
+            url: '/examples/workflow-components',
+            tooltip: "Aperçu visuel des nouveaux composants de workflow"
         }
     ]
 };
