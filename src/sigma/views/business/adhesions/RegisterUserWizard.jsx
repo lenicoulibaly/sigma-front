@@ -39,7 +39,7 @@ import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
 import { useOpenStructuresSearch } from 'src/sigma/hooks/query/useStructures';
 import { useTypesByGroupCode, useDirectSousTypes } from 'src/sigma/hooks/query/useTypes';
 import { useOpenAssociationsList } from 'src/sigma/hooks/query/useAssociations';
-import { useCreateUserWithDemandeAdhesion } from 'src/sigma/hooks/query/useAdhesions';
+import { useCreateUserAndDemandeAdhesion } from 'src/sigma/hooks/query/useDemandeAdhesion';
 import { useLatestDocument } from 'src/sigma/hooks/query/useDocuments';
 import { IFrameModal } from 'src/sigma/components/commons/IFrameModal';
 
@@ -65,13 +65,13 @@ const FrameLabel = styled(Typography)(({ theme }) => ({
 }));
 
 const RoundIconButton = styled(IconButton)(({ theme }) => ({
-  width: 36,
-  height: 36,
-  borderRadius: '50%'
+    width: 36,
+    height: 36,
+    borderRadius: '50%'
 }));
 
 // Helpers
-const toOption = (item) => ({ id: item?.id ?? item?.value ?? item?.key, label: item?.libelle || item?.label || item?.name || item?.sigle || item?.assoName || `${item?.firstName ?? ''} ${item?.lastName ?? ''}`.trim() });
+const toOption = (item) => ({ id: item?.id ?? item?.code ?? item?.value ?? item?.key, label: item?.libelle || item?.label || item?.name || item?.sigle || item?.assoName || `${item?.firstName ?? ''} ${item?.lastName ?? ''}`.trim() });
 
 const emptyDocumentRow = () => ({
   id: Math.random().toString(36).slice(2),
@@ -129,7 +129,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     documents: [emptyDocumentRow()]
   });
 
-  const createWithDemande = useCreateUserWithDemandeAdhesion();
+  const createWithDemande = useCreateUserAndDemandeAdhesion();
 
   // Latest association docs (charte & statuts/règlements)
   const { data: latestCharteDoc } = useLatestDocument({
@@ -302,6 +302,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                 <Autocomplete
                     size="small"
                     options={civilityOptions}
+                    isOptionEqualToValue={(option, value) => option.code === value.code}
                     value={civilityOptions.find((o) => o.code === values.codeCivilite) || null}
                     onChange={(_e, opt) => setField('codeCivilite', opt?.code || '')}
                     getOptionLabel={(opt) => opt?.label || ''}
@@ -344,6 +345,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               options={gradeOptions}
               loading={loadingGrades}
               getOptionLabel={(o) => o?.label || ''}
+              isOptionEqualToValue={(option, value) => option.code === value.code}
               value={gradeOptions.find((o) => o.code === values.gradeCode) || null}
               onChange={(_e, opt) => setField('gradeCode', opt?.code || '')}
               renderInput={(params) => <TextField {...params} label="Grade" />}
@@ -354,6 +356,8 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               size="small"
               options={emploiOptions}
               loading={loadingEmplois}
+              getOptionLabel={(o) => o?.label || ''}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
               value={emploiOptions.find((o) => o.id === values.emploiCode) || null}
               onChange={(_e, opt) => setField('emploiCode', opt?.id || '')}
               renderInput={(params) => <TextField {...params} label="Emploi" />}
@@ -385,6 +389,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                     size="small"
                     options={structureOptions}
                     loading={loadingStructures}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
                     value={structureOptions.find((o) => o.id === values.strId) || null}
                     inputValue={structureInput}
                     onChange={(_e, opt) => {
@@ -434,6 +439,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
             <Autocomplete
               size="small"
               options={associationOptions}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
               value={associationOptions.find((o) => o.id === values.assoId) || null}
               inputValue={assoInput}
               onChange={(_e, opt) => {
@@ -443,11 +449,19 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                 setField('accepteStatutsReglements', false);
                 if (opt?.label) setAssoInput(opt.label);
               }}
-              onInputChange={(_e, input) => {
-                const val = input || '';
-                setAssoInput(val);
-                setAssoQuery(val.trim());
+              onInputChange={(_e, input, reason) => {
+                if (reason === 'input') {
+                  const val = input || '';
+                  setAssoInput(val);
+                  setAssoQuery(val.trim());
+                } else if (reason === 'clear') {
+                  setAssoInput('');
+                  setAssoQuery('');
+                } else {
+                  setAssoInput(input || '');
+                }
               }}
+              filterOptions={(x) => x}
               clearOnBlur={false}
               getOptionLabel={(o) => o?.label || ''}
               renderInput={(params) => (

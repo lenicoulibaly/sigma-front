@@ -2,14 +2,15 @@
 import { FormattedMessage } from 'react-intl';
 
 // assets
-import { IconUsers, IconBuildingCommunity, IconUserPlus, IconReceipt } from '@tabler/icons-react';
+import { IconUsers, IconBuildingCommunity, IconUserPlus, IconReceipt, IconFileText } from '@tabler/icons-react';
 
 // constant
 const icons = {
     IconUsers,
     IconBuildingCommunity,
     IconUserPlus,
-    IconReceipt
+    IconReceipt,
+    IconFileText
 };
 
 // ==============================|| ASSOCIATIONS MENU ITEMS ||============================== //
@@ -35,6 +36,22 @@ const associations = {
             icon: icons.IconUsers,
             url: '/associations/sections',
             tooltip: 'Gestion des sections'
+        },
+        {
+            id: 'demandes-adhesion',
+            title: "Demandes d'adhésion",
+            type: 'item',
+            icon: icons.IconFileText,
+            url: '/business/demandes-adhesion/list',
+            tooltip: "Gestion des demandes d'adhésion"
+        },
+        {
+            id: 'my-demandes-adhesion',
+            title: "Mes demandes",
+            type: 'item',
+            icon: icons.IconFileText,
+            url: '/business/demandes-adhesion/my-list',
+            tooltip: "Mes propres demandes d'adhésion"
         },
         {
             id: 'membres',

@@ -53,3 +53,29 @@ export const sectionApi = {
         return response.data;
     },
 };
+
+// API Demandes Adhésion
+export const demandeAdhesionApi = {
+    create: async (dto) => {
+        const response = await apiClient.post('/demandes-adhesion', dto);
+        return response.data;
+    },
+    update: async (id, dto) => {
+        const response = await apiClient.put(`/demandes-adhesion/${id}`, dto);
+        return response.data;
+    },
+    search: async (assoId, params = {}) => {
+        const response = await apiClient.get(`/demandes-adhesion/${assoId}/search`, { params });
+        return response.data;
+    },
+    searchForUser: async (params = {}) => {
+        const queryString = qs.stringify(params, { arrayFormat: 'repeat' });
+        const response = await apiClient.get(`/demandes-adhesion/user-demandes?${queryString}`);
+        return response.data;
+    },
+    createUserAndDemandeAdhesion: async (dto) => {
+        const headers = dto instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {};
+        const response = await apiClient.post('/demandes-adhesion/open/user-demande', dto, { headers });
+        return response.data;
+    },
+};
