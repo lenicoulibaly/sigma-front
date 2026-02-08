@@ -119,8 +119,14 @@ export const useSendActivationEmail = () => {
     });
 };
 
-export const useSendResetPasswordEmail = () => {
+export const useSendResetPasswordEmailByUserId = () => {
     return useMutation({
         mutationFn: (userId) => userApi.sendResetPasswordEmail(userId),
+    });
+};
+
+export const useSendResetPasswordEmailByEmail = () => {
+    return useMutation({
+        mutationFn: (email) => userApi.sendPublicResetPasswordEmail(email),
     });
 };

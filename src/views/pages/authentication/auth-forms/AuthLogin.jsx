@@ -142,10 +142,13 @@ const JWTLogin = ({ loginProp, ...others }) => {
                                 variant="subtitle1"
                                 component={Link}
                                 to={
-                                    loginProp
-                                        ? `/pages/forgot-password/forgot-password${loginProp}`
-                                        : '/pages/forgot-password/forgot-password3'
+                                    loginProp?.onForgotPassword
+                                        ? '#'
+                                        : (loginProp
+                                            ? `/pages/forgot-password/forgot-password${loginProp}`
+                                            : '/pages/forgot-password/forgot-password3')
                                 }
+                                onClick={loginProp?.onForgotPassword}
                                 color="secondary"
                                 sx={{ textDecoration: 'none' }}
                             >
@@ -188,7 +191,8 @@ const JWTLogin = ({ loginProp, ...others }) => {
 
 JWTLogin.propTypes = {
     loginProp: PropTypes.shape({
-        onCreateAccount: PropTypes.func
+        onCreateAccount: PropTypes.func,
+        onForgotPassword: PropTypes.func
     })
 };
 

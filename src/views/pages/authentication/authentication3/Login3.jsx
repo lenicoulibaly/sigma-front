@@ -16,6 +16,8 @@ import RegisterUserWizard from 'src/sigma/views/business/adhesions/RegisterUserW
 import Logo from 'ui-component/Logo';
 import AuthFooter from 'ui-component/cards/AuthFooter';
 import useAuth from 'src/sigma/hooks/useAuth';
+import Modal from 'src/sigma/components/commons/Modal';
+import ForgotPassword3 from './ForgotPassword3';
 
 // assets
 
@@ -25,6 +27,7 @@ const Login = () => {
     const { isLoggedIn } = useAuth();
     const downMD = useMediaQuery((theme) => theme.breakpoints.down('md'));
     const [openRegisterModal, setOpenRegisterModal] = useState(false);
+    const [openForgotModal, setOpenForgotModal] = useState(false);
 
     const handleOpenRegisterModal = () => {
         setOpenRegisterModal(true);
@@ -34,8 +37,26 @@ const Login = () => {
         setOpenRegisterModal(false);
     };
 
+    const handleOpenForgotModal = (e) => {
+        if (e) e.preventDefault();
+        setOpenForgotModal(true);
+    };
+
+    const handleCloseForgotModal = () => {
+        setOpenForgotModal(false);
+    };
+
     return (
         <AuthWrapper1>
+            {/* Forgot Password Modal */}
+            <Modal
+                open={openForgotModal}
+                handleClose={handleCloseForgotModal}
+                title="Récupération du mot de passe"
+                actionVisible={false}
+            >
+                <ForgotPassword3 />
+            </Modal>
             {/* Register User Wizard */}
             <RegisterUserWizard open={openRegisterModal} handleClose={handleCloseRegisterModal} />
             <Grid container direction="column" justifyContent="flex-end" sx={{ minHeight: '100vh' }}>
@@ -79,7 +100,12 @@ const Login = () => {
                                         </Grid>
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <AuthLogin loginProp={{ onCreateAccount: handleOpenRegisterModal }} />
+                                        <AuthLogin 
+                                            loginProp={{ 
+                                                onCreateAccount: handleOpenRegisterModal,
+                                                onForgotPassword: handleOpenForgotModal 
+                                            }} 
+                                        />
                                     </Grid>
                                     <Grid item xs={12}>
                                         <Divider />

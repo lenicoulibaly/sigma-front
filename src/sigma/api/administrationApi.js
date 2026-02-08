@@ -32,7 +32,7 @@ export const userApi = {
 
     // Gestion statut utilisateurs
     activateUser: async (userData) => {
-        const response = await apiClient.put('/users/activate', userData);
+        const response = await apiClient.put('/users/open/activate', userData);
         return response.data;
     },
     blockUser: async (userId) => {
@@ -65,8 +65,8 @@ export const userApi = {
     },
 
     // Endpoint public pour réinitialisation de mot de passe
-    sendResetPasswordEmailByEmail: async (emailData) => {
-        const response = await apiClient.post('/users/open/send-reset-password-email', emailData);
+    sendPublicResetPasswordEmail: async (email) => {
+        const response = await apiClient.post('/users/open/send-reset-password-email', { email });
         return response.data;
     },
 

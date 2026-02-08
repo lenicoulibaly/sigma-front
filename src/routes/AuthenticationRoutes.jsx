@@ -164,7 +164,11 @@ const AuthenticationRoutes = {
         },
         {
             path: '/reset-password-form',
-            element: <ResetPasswordForm />
+            element: <AuthResetPassword3 />
+        },
+        {
+            path: '/activate-account',
+            element: <AuthResetPassword3 />
         }
     ]
 };

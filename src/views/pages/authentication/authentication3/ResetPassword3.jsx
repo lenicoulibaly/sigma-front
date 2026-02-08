@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 // material-ui
 import Grid from '@mui/material/Grid';
@@ -19,6 +19,12 @@ import AuthFooter from 'ui-component/cards/AuthFooter';
 
 const ResetPassword = () => {
     const downMD = useMediaQuery((theme) => theme.breakpoints.down('md'));
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    
+    const token = queryParams.get('token');
+    const userId = queryParams.get('userId');
+    const isActivation = location.pathname.includes('activate-account');
 
     return (
         <AuthWrapper1>
@@ -43,21 +49,27 @@ const ResetPassword = () => {
                                             <Grid item>
                                                 <Stack alignItems="center" justifyContent="center" spacing={1}>
                                                     <Typography color="secondary.main" gutterBottom variant={downMD ? 'h3' : 'h2'}>
-                                                        Reset Password
+                                                        {isActivation ? 'Activation du compte' : 'Réinitialisation du mot de passe'}
                                                     </Typography>
                                                     <Typography
                                                         variant="caption"
                                                         fontSize="16px"
                                                         textAlign={{ xs: 'center', md: 'inherit' }}
                                                     >
-                                                        Please choose your new password
+                                                        {isActivation 
+                                                            ? 'Veuillez choisir votre mot de passe pour activer votre compte' 
+                                                            : 'Veuillez choisir votre nouveau mot de passe'}
                                                     </Typography>
                                                 </Stack>
                                             </Grid>
                                         </Grid>
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <AuthResetPassword />
+                                        <AuthResetPassword 
+                                            token={token} 
+                                            userId={userId} 
+                                            isActivation={isActivation} 
+                                        />
                                     </Grid>
                                 </Grid>
                             </AuthCardWrapper>

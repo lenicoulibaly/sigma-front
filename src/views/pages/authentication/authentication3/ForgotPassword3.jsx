@@ -21,60 +21,25 @@ const ForgotPassword = () => {
     const { isLoggedIn } = useAuth();
 
     return (
-        <AuthWrapper1>
-            <Grid container direction="column" justifyContent="flex-end" sx={{ minHeight: '100vh' }}>
-                <Grid item xs={12}>
-                    <Grid container justifyContent="center" alignItems="center" sx={{ minHeight: 'calc(100vh - 68px)' }}>
-                        <Grid item sx={{ m: { xs: 1, sm: 3 }, mb: 0 }}>
-                            <AuthCardWrapper>
-                                <Grid container spacing={2} alignItems="center" justifyContent="center">
-                                    <Grid item sx={{ mb: 3 }}>
-                                        <Link to="#" aria-label="theme logo">
-                                            <Logo />
-                                        </Link>
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Grid container alignItems="center" justifyContent="center" textAlign="center" spacing={2}>
-                                            <Grid item xs={12}>
-                                                <Typography color="secondary.main" gutterBottom variant={downMD ? 'h3' : 'h2'}>
-                                                    Mot de passe oublié?
-                                                </Typography>
-                                            </Grid>
-                                            <Grid item xs={12}>
-                                                <Typography variant="caption" fontSize="16px" textAlign="center">
-                                                    Entrez votre adresse e-mail ci-dessous et nous vous enverrons un lien de réinitialisation de mot de passe.
-                                                </Typography>
-                                            </Grid>
-                                        </Grid>
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <AuthForgotPassword />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Divider />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Grid item container direction="column" alignItems="center" xs={12}>
-                                            <Typography
-                                                component={Link}
-                                                to={isLoggedIn ? '/pages/login/login3' : '/login'}
-                                                variant="subtitle1"
-                                                sx={{ textDecoration: 'none' }}
-                                            >
-                                                Vous avez déjà un compte?
-                                            </Typography>
-                                        </Grid>
-                                    </Grid>
-                                </Grid>
-                            </AuthCardWrapper>
-                        </Grid>
+        <Grid container spacing={2} alignItems="center" justifyContent="center">
+            <Grid item xs={12}>
+                <Grid container alignItems="center" justifyContent="center" textAlign="center" spacing={2}>
+                    <Grid item xs={12}>
+                        <Typography color="secondary.main" gutterBottom variant={downMD ? 'h3' : 'h2'}>
+                            Mot de passe oublié?
+                        </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Typography variant="caption" fontSize="16px" textAlign="center">
+                            Entrez votre adresse e-mail ci-dessous et nous vous enverrons un lien de réinitialisation de mot de passe.
+                        </Typography>
                     </Grid>
                 </Grid>
-                <Grid item xs={12} sx={{ m: 3, mt: 1 }}>
-                    <AuthFooter />
-                </Grid>
             </Grid>
-        </AuthWrapper1>
+            <Grid item xs={12}>
+                <AuthForgotPassword />
+            </Grid>
+        </Grid>
     );
 };
 

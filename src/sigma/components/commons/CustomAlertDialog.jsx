@@ -40,7 +40,8 @@ export default function CustomAlertDialog({
     cancelLabel,
     handleConfirmation,
     TriggerIcon,
-    triggerStyle
+    triggerStyle,
+    triggerSize = 'large'
 }) {
     const theme = useTheme();
     const [internalOpen, setInternalOpen] = React.useState(false);
@@ -82,7 +83,7 @@ export default function CustomAlertDialog({
                     <IconButton 
                         color="secondary" 
                         sx={triggerStyle} 
-                        size="large" 
+                        size={triggerSize} 
                         disabled={actionDisabled} 
                         variant={variant} 
                         onClick={handleClickOpen}
@@ -109,8 +110,6 @@ export default function CustomAlertDialog({
                 aria-describedby="alert-dialog-description"
                 sx={{ p: 3 }}
             >
-                {dialogOpen && (
-                    <>
                         <DialogTitle id="alert-dialog-title">
                             {title}
                         </DialogTitle>
@@ -150,8 +149,6 @@ export default function CustomAlertDialog({
                                 )}
                             </Button>
                         </DialogActions>
-                    </>
-                )}
             </Dialog>
         </>
     );
@@ -180,5 +177,6 @@ CustomAlertDialog.propTypes = {
     cancelLabel: PropTypes.string,
     handleConfirmation: PropTypes.func,
     TriggerIcon: PropTypes.node,
-    triggerStyle: PropTypes.object
+    triggerStyle: PropTypes.object,
+    triggerSize: PropTypes.string
 };
