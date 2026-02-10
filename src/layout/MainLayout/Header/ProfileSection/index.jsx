@@ -187,6 +187,12 @@ const ProfileSection = () => {
                                                     </Typography>
                                                     {defaultProfile && <StarIcon fontSize="small" color="warning" />}
                                                 </Stack>
+                                                {defaultProfile?.assoName && (
+                                                    <Typography variant="caption" color="textSecondary">
+                                                        {defaultProfile?.assoName}
+                                                    </Typography>
+                                                )}
+
                                                 {defaultProfile && (
                                                     <Typography variant="caption" color="textSecondary">
                                                         ({defaultProfile.strName})
@@ -216,11 +222,7 @@ const ProfileSection = () => {
                                                             <IconSettings stroke={1.5} size="20px" />
                                                         </ListItemIcon>
                                                         <ListItemText
-                                                            primary={
-                                                                <Typography variant="body2">
-                                                                    Voir mes profils actifs
-                                                                </Typography>
-                                                            }
+                                                            primary={<Typography variant="body2">Voir mes profils actifs</Typography>}
                                                         />
                                                     </ListItemButton>
                                                     <ListItemButton
@@ -231,27 +233,14 @@ const ProfileSection = () => {
                                                             <IconLock stroke={1.5} size="20px" />
                                                         </ListItemIcon>
                                                         <ListItemText
-                                                            primary={
-                                                                <Typography variant="body2">
-                                                                    Changer mot de passe
-                                                                </Typography>
-                                                            }
+                                                            primary={<Typography variant="body2">Changer mot de passe</Typography>}
                                                         />
                                                     </ListItemButton>
-                                                    <ListItemButton
-                                                        sx={{ borderRadius: `${borderRadius}px` }}
-                                                        onClick={handleLogout}
-                                                    >
+                                                    <ListItemButton sx={{ borderRadius: `${borderRadius}px` }} onClick={handleLogout}>
                                                         <ListItemIcon>
                                                             <IconLogout stroke={1.5} size="20px" />
                                                         </ListItemIcon>
-                                                        <ListItemText
-                                                            primary={
-                                                                <Typography variant="body2">
-                                                                    Déconnexion
-                                                                </Typography>
-                                                            }
-                                                        />
+                                                        <ListItemText primary={<Typography variant="body2">Déconnexion</Typography>} />
                                                     </ListItemButton>
                                                 </List>
                                             </Box>
@@ -265,17 +254,10 @@ const ProfileSection = () => {
             </Popper>
 
             {/* User Profiles Modal */}
-            <UserProfilesModal 
-                open={openProfilesModal} 
-                handleClose={handleCloseProfilesModal} 
-                userId={user?.userId} 
-            />
+            <UserProfilesModal open={openProfilesModal} handleClose={handleCloseProfilesModal} userId={user?.userId} />
 
             {/* Change Password Modal */}
-            <ChangePasswordModal
-                open={openChangePasswordModal}
-                handleClose={handleCloseChangePasswordModal}
-            />
+            <ChangePasswordModal open={openChangePasswordModal} handleClose={handleCloseChangePasswordModal} />
         </>
     );
 };

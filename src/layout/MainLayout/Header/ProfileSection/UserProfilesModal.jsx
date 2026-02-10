@@ -98,9 +98,14 @@ const UserProfilesModal = ({ open, handleClose, userId }) => {
 
                 setIsChangingDefault(false);
                 setConfirmDialogOpen(false);
-                setAlertMessage('Le profil par défaut a été modifié avec succès');
+                setAlertMessage('Le profil par défaut a été modifié avec succès. La page va s\'actualiser...');
                 setAlertSeverity('success');
                 setAlertOpen(true);
+
+                // Refresh the page after a short delay to apply changes throughout the application
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             },
             onError: (error) => {
                 console.error('Error setting default profile:', error);
