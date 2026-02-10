@@ -4,20 +4,13 @@ import { useQueryClient } from '@tanstack/react-query';
 
 // material-ui
 import {
+    Autocomplete,
     Box,
     Button,
     Divider,
-    FormControl,
-    FormHelperText,
     Grid,
-    InputLabel,
-    MenuItem,
-    OutlinedInput,
-    Select,
-    Stack,
     TextField,
-    Typography,
-    Autocomplete
+    Typography
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -176,87 +169,79 @@ const AddUserModal = ({ open, handleClose }) => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.firstName)}>
-                        <InputLabel htmlFor="firstName">Prénom</InputLabel>
-                        <OutlinedInput
-                            id="firstName"
-                            name="firstName"
-                            label="Prénom"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                        />
-                        {errors.firstName && (
-                            <FormHelperText error>{errors.firstName}</FormHelperText>
-                        )}
-                    </FormControl>
+                    <TextField
+                        fullWidth
+                        id="firstName"
+                        name="firstName"
+                        label="Prénom"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        error={Boolean(errors.firstName)}
+                        helperText={errors.firstName}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.lastName)}>
-                        <InputLabel htmlFor="lastName">Nom</InputLabel>
-                        <OutlinedInput
-                            id="lastName"
-                            name="lastName"
-                            label="Nom"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                        />
-                        {errors.lastName && (
-                            <FormHelperText error>{errors.lastName}</FormHelperText>
-                        )}
-                    </FormControl>
+                    <TextField
+                        fullWidth
+                        id="lastName"
+                        name="lastName"
+                        label="Nom"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        error={Boolean(errors.lastName)}
+                        helperText={errors.lastName}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.email)}>
-                        <InputLabel htmlFor="email">Email</InputLabel>
-                        <OutlinedInput
-                            id="email"
-                            name="email"
-                            label="Email"
-                            value={formData.email}
-                            onChange={handleChange}
-                        />
-                        {errors.email && (
-                            <FormHelperText error>{errors.email}</FormHelperText>
-                        )}
-                    </FormControl>
+                    <TextField
+                        fullWidth
+                        id="email"
+                        name="email"
+                        label="Email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        error={Boolean(errors.email)}
+                        helperText={errors.email}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.tel)}>
-                        <InputLabel htmlFor="tel">Téléphone</InputLabel>
-                        <OutlinedInput
-                            id="tel"
-                            name="tel"
-                            label="Téléphone"
-                            value={formData.tel}
-                            onChange={handleChange}
-                        />
-                        {errors.tel && (
-                            <FormHelperText error>{errors.tel}</FormHelperText>
-                        )}
-                    </FormControl>
+                    <TextField
+                        fullWidth
+                        id="tel"
+                        name="tel"
+                        label="Téléphone"
+                        value={formData.tel}
+                        onChange={handleChange}
+                        error={Boolean(errors.tel)}
+                        helperText={errors.tel}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12}>
-                    <FormControl fullWidth error={Boolean(errors.strId)}>
-                        <Autocomplete
-                            id="structure"
-                            options={structures || []}
-                            getOptionLabel={(option) => option.strName || ''}
-                            onChange={handleStructureChange}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Structure"
-                                    error={Boolean(errors.strId)}
-                                    helperText={errors.strId}
-                                />
-                            )}
-                            isOptionEqualToValue={(option, value) => option.strId === value?.strId}
-                        />
-                    </FormControl>
+                    <Autocomplete
+                        id="structure"
+                        options={structures || []}
+                        getOptionLabel={(option) => option.strName || ''}
+                        onChange={handleStructureChange}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Structure"
+                                error={Boolean(errors.strId)}
+                                helperText={errors.strId}
+                                size="small"
+                            />
+                        )}
+                        isOptionEqualToValue={(option, value) => option.strId === value?.strId}
+                        size="small"
+                    />
                 </Grid>
 
                 {/* Profile Information Section */}
@@ -268,49 +253,71 @@ const AddUserModal = ({ open, handleClose }) => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.profileCode)}>
-                        <InputLabel id="profile-label">Profil</InputLabel>
-                        <Select
-                            labelId="profile-label"
-                            id="profileCode"
-                            name="profileCode"
-                            value={formData.profileCode}
-                            label="Profil"
-                            onChange={handleChange}
-                        >
-                            {profiles?.map((profile) => (
-                                <MenuItem key={profile.code} value={profile.code}>
-                                    {profile.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        {errors.profileCode && (
-                            <FormHelperText error>{errors.profileCode}</FormHelperText>
+                    <Autocomplete
+                        id="profileCode"
+                        options={profiles || []}
+                        getOptionLabel={(option) => option.name || ''}
+                        isOptionEqualToValue={(option, value) => option.code === value.code}
+                        value={profiles?.find((p) => p.code === formData.profileCode) || null}
+                        onChange={(event, newValue) => {
+                            setFormData({
+                                ...formData,
+                                profileCode: newValue ? newValue.code : ''
+                            });
+                            if (errors.profileCode) {
+                                setErrors({
+                                    ...errors,
+                                    profileCode: null
+                                });
+                            }
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Profil"
+                                error={Boolean(errors.profileCode)}
+                                helperText={errors.profileCode}
+                                fullWidth
+                                size="small"
+                            />
                         )}
-                    </FormControl>
+                        loading={isLoadingProfiles}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.userProfileAssTypeCode)}>
-                        <InputLabel id="profile-type-label">Type de profil</InputLabel>
-                        <Select
-                            labelId="profile-type-label"
-                            id="userProfileAssTypeCode"
-                            name="userProfileAssTypeCode"
-                            value={formData.userProfileAssTypeCode}
-                            label="Type de profil"
-                            onChange={handleChange}
-                        >
-                            {profileTypes?.map((type) => (
-                                <MenuItem key={type.code} value={type.code}>
-                                    {type.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        {errors.userProfileAssTypeCode && (
-                            <FormHelperText error>{errors.userProfileAssTypeCode}</FormHelperText>
+                    <Autocomplete
+                        id="userProfileAssTypeCode"
+                        options={profileTypes || []}
+                        getOptionLabel={(option) => option.name || ''}
+                        isOptionEqualToValue={(option, value) => option.code === value.code}
+                        value={profileTypes?.find((t) => t.code === formData.userProfileAssTypeCode) || null}
+                        onChange={(event, newValue) => {
+                            setFormData({
+                                ...formData,
+                                userProfileAssTypeCode: newValue ? newValue.code : ''
+                            });
+                            if (errors.userProfileAssTypeCode) {
+                                setErrors({
+                                    ...errors,
+                                    userProfileAssTypeCode: null
+                                });
+                            }
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Type de profil"
+                                error={Boolean(errors.userProfileAssTypeCode)}
+                                helperText={errors.userProfileAssTypeCode}
+                                fullWidth
+                                size="small"
+                            />
                         )}
-                    </FormControl>
+                        loading={isLoadingProfileTypes}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
@@ -323,7 +330,8 @@ const AddUserModal = ({ open, handleClose }) => {
                                 textField: {
                                     fullWidth: true,
                                     error: Boolean(errors.startingDate),
-                                    helperText: errors.startingDate
+                                    helperText: errors.startingDate,
+                                    size: 'small'
                                 }
                             }}
                         />
@@ -338,7 +346,8 @@ const AddUserModal = ({ open, handleClose }) => {
                             onChange={handleEndDateChange}
                             slotProps={{
                                 textField: {
-                                    fullWidth: true
+                                    fullWidth: true,
+                                    size: 'small'
                                 }
                             }}
                         />
@@ -348,7 +357,7 @@ const AddUserModal = ({ open, handleClose }) => {
                 {/* Error message */}
                 {errors.submit && (
                     <Grid item xs={12}>
-                        <FormHelperText error>{errors.submit}</FormHelperText>
+                        <Typography color="error">{errors.submit}</Typography>
                     </Grid>
                 )}
             </Grid>

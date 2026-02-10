@@ -45,9 +45,13 @@ import {
   getWorkflowStatusGroup as apiGetWorkflowStatusGroup,
   deleteWorkflowStatusGroup as apiDeleteWorkflowStatusGroup,
   getWorkflowStatusGroupAuthorityCodes as apiGetWorkflowStatusGroupAuthorityCodes,
+  getAccessibleWorkflowStatusGroups as apiGetAccessibleWorkflowStatusGroups,
+  isStatusVisibleByGroup as apiIsStatusVisibleByGroup,
   // Workflow Execution
   getAvailableTransitions as apiGetAvailableTransitions,
   applyTransition as apiApplyTransition,
+  getWorkflowHistory as apiGetWorkflowHistory,
+  getGeneralInfo as apiGetGeneralInfo,
 } from '../../api/workflowApi';
 
 // Query keys
@@ -96,12 +100,23 @@ const STATUS_GROUP_KEYS = {
   all: ['workflowStatusGroups'],
   details: () => [...STATUS_GROUP_KEYS.all, 'detail'],
   detail: (id) => [...STATUS_GROUP_KEYS.details(), id],
-  search: (params) => [...STATUS_GROUP_KEYS.all, 'search', params?.key ?? null, params?.page ?? 0, params?.size ?? 10],
+  search: (params) => [
+    ...STATUS_GROUP_KEYS.all,
+    'search',
+    params?.workflowId ?? null,
+    params?.key ?? null,
+    params?.page ?? 0,
+    params?.size ?? 10
+  ],
+  accessible: (workflowCode) => [...STATUS_GROUP_KEYS.all, 'accessible', workflowCode],
+  isVisible: (groupCode, statusCode) => [...STATUS_GROUP_KEYS.all, 'is-visible', groupCode, statusCode]
 };
 
 const EXECUTION_KEYS = {
   all: ['workflowExecution'],
   availableTransitions: (workflowCode, objectType, objectId) => [...EXECUTION_KEYS.all, 'availableTransitions', workflowCode, objectType, objectId],
+  history: (objectType, objectId, params) => [...EXECUTION_KEYS.all, 'history', objectType, objectId, params],
+  generalInfo: (objectType, objectId) => [...EXECUTION_KEYS.all, 'generalInfo', objectType, objectId],
 };
 
 // Queries
@@ -334,14 +349,14 @@ export const useUpdateWorkflowStatus = () => {
 };
 
 // Workflow Status Groups
-export const useSearchWorkflowStatusGroups = (params = {}, options = {}) => {
+export const useSearchWorkflowStatusGroups = (workflowId, params = {}, options = {}) => {
   const { key, page = 0, size = 10 } = params || {};
-  const enabled = options.enabled ?? true;
+  const enabled = options.enabled ?? !!workflowId;
   return useQuery({
-    queryKey: STATUS_GROUP_KEYS.search({ key, page, size }),
-    queryFn: () => apiSearchWorkflowStatusGroups({ key, page, size }),
+    queryKey: STATUS_GROUP_KEYS.search({ workflowId, key, page, size }),
+    queryFn: () => apiSearchWorkflowStatusGroups(workflowId, { key, page, size }),
     enabled,
-    keepPreviousData: true,
+    keepPreviousData: true
   });
 };
 
@@ -391,6 +406,24 @@ export const useWorkflowStatusGroupAuthorityCodes = (id, options = {}) => {
   return useQuery({
     queryKey: [...STATUS_GROUP_KEYS.detail(id), 'authorityCodes'],
     queryFn: () => apiGetWorkflowStatusGroupAuthorityCodes(id),
+    enabled,
+  });
+};
+
+export const useAccessibleWorkflowStatusGroups = (workflowCode, options = {}) => {
+  const enabled = options.enabled ?? !!workflowCode;
+  return useQuery({
+    queryKey: STATUS_GROUP_KEYS.accessible(workflowCode),
+    queryFn: () => apiGetAccessibleWorkflowStatusGroups(workflowCode),
+    enabled,
+  });
+};
+
+export const useIsStatusVisibleByGroup = (groupCode, statusCode, options = {}) => {
+  const enabled = options.enabled ?? (!!groupCode && !!statusCode);
+  return useQuery({
+    queryKey: STATUS_GROUP_KEYS.isVisible(groupCode, statusCode),
+    queryFn: () => apiIsStatusVisibleByGroup(groupCode, statusCode),
     enabled,
   });
 };
@@ -505,6 +538,8 @@ export const TRANSITION_RULE_QUERY_KEYS = RULE_KEYS;
 export const TRANSITION_VALIDATION_QUERY_KEYS = VALIDATION_CFG_KEYS;
 export const TRANSITION_SIDE_EFFECT_QUERY_KEYS = SIDE_EFFECT_KEYS;
 export const WORKFLOW_STATUS_QUERY_KEYS = STATUS_KEYS;
+export const WORKFLOW_STATUS_GROUP_QUERY_KEYS = STATUS_GROUP_KEYS;
+export const WORKFLOW_EXECUTION_QUERY_KEYS = EXECUTION_KEYS;
 
 
 // Workflow Execution
@@ -518,8 +553,44 @@ export const useAvailableTransitions = (workflowCode, objectType, objectId, opti
 };
 
 export const useApplyTransition = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ workflowCode, objectType, objectId, transitionId, request, files, fileTypes }) =>
       apiApplyTransition(workflowCode, objectType, objectId, transitionId, request, files, fileTypes),
+    onSuccess: (_data, { workflowCode, objectType, objectId }) => {
+      // Invalidate available transitions
+      queryClient.invalidateQueries({
+        queryKey: EXECUTION_KEYS.availableTransitions(workflowCode, objectType, objectId)
+      });
+      // Invalidate history
+      queryClient.invalidateQueries({
+        queryKey: EXECUTION_KEYS.history(objectType, objectId)
+      });
+      // Invalidate general info
+      queryClient.invalidateQueries({
+        queryKey: EXECUTION_KEYS.generalInfo(objectType, objectId)
+      });
+      // It might be useful to invalidate the object itself if we had a generic way to know its query key
+      // But typically, the consumer will do it or we can rely on onTransitionApplied event as suggested in issue
+    }
+  });
+};
+
+export const useWorkflowHistory = (objectType, objectId, params = {}, options = {}) => {
+  const enabled = options.enabled ?? (!!objectType && !!objectId);
+  return useQuery({
+    queryKey: EXECUTION_KEYS.history(objectType, objectId, params),
+    queryFn: () => apiGetWorkflowHistory(objectType, objectId, params),
+    enabled,
+    keepPreviousData: true,
+  });
+};
+
+export const useWorkflowGeneralInfo = (objectType, objectId, options = {}) => {
+  const enabled = options.enabled ?? (!!objectType && !!objectId);
+  return useQuery({
+    queryKey: EXECUTION_KEYS.generalInfo(objectType, objectId),
+    queryFn: () => apiGetGeneralInfo(objectType, objectId),
+    enabled,
   });
 };

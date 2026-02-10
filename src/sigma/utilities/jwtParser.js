@@ -22,6 +22,8 @@ export function getUserFromAccessToken(token) {
         firstName: claims.firstName || "",
         lastName: claims.lastName || "",
         tel: claims.tel || "",
-        strId: claims.strId           // laissé tel quel (number ou string selon ton backend)
+        strId: claims.strId,          // laissé tel quel (number ou string selon ton backend)
+        assoId: claims.assoId,
+        sectionId: claims.sectionId
     };
 }

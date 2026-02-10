@@ -29,17 +29,46 @@ const GenericSearchablePaginatedList = ({
     initialPageSize = 10,
     tableProps = {},
     headerActions,
-    enableFixedLayout = 'auto'
+    enableFixedLayout = 'auto',
+    initialFilters = {},
+    // Manual data props
+    data: manualData,
+    totalElements: manualTotalElements,
+    loading: manualLoading,
+    isError: manualIsError,
+    error: manualError,
+    page: manualPage,
+    size: manualSize,
+    onPageChange,
+    onSizeChange,
+    search: manualSearch,
+    onSearchChange,
+    filters: manualFilters,
+    onFiltersChange
 }) => {
     // Use the generic controller to manage state and query execution
     const controller = useGenericListController({
         queryHook,
         dropdownFilters,
         paramMapper,
-        initialPage,
-        initialPageSize,
-        searchParamName
+        initialPage: manualPage ?? initialPage,
+        initialPageSize: manualSize ?? initialPageSize,
+        searchParamName,
+        initialFilters
     });
+
+    // Determine values to use (manual or from controller)
+    const rows = manualData ?? controller.rows;
+    const totalElements = manualTotalElements ?? controller.totalElements;
+    const isLoading = manualLoading ?? controller.isLoading;
+    const isError = manualIsError ?? controller.isError;
+    const error = manualError ?? controller.error;
+    const currentPage = manualPage ?? controller.currentPage;
+    const currentSize = manualSize ?? controller.size;
+    const totalPages = manualData ? Math.ceil(totalElements / currentSize) : controller.totalPages;
+
+    const currentSearch = manualSearch ?? controller.search;
+    const currentFilters = manualFilters ?? controller.filters;
 
     return (
         <Paper elevation={1}>
@@ -57,37 +86,37 @@ const GenericSearchablePaginatedList = ({
             <Box sx={{ p: 2 }}>
                 {/* Filters row with optional Add button aligned at right */}
                 <GenericListFilters
-                    search={controller.search}
-                    onSearchChange={controller.setSearch}
+                    search={currentSearch}
+                    onSearchChange={onSearchChange ?? controller.setSearch}
                     searchLabel={searchLabel}
                     searchPlaceholder={searchPlaceholder}
                     dropdownFilters={dropdownFilters}
-                    filters={controller.filters}
-                    onFiltersChange={controller.setFilterValue}
+                    filters={currentFilters}
+                    onFiltersChange={onFiltersChange ?? controller.setFilterValue}
                     addButton={addButton}
                 />
 
                 {/* Data table with actions */}
                 <GenericDataTable
                     columns={columns}
-                    rows={controller.rows}
+                    rows={rows}
                     getRowId={getRowId}
                     rowActions={rowActions}
-                    isLoading={controller.isLoading}
-                    isError={controller.isError}
-                    error={controller.error}
+                    isLoading={isLoading}
+                    isError={isError}
+                    error={error}
                     enableFixedLayout={enableFixedLayout}
                     tableProps={tableProps}
                 />
 
                 {/* Unified pagination */}
                 <GenericListPagination
-                    totalPages={controller.totalPages}
-                    currentPage={controller.currentPage}
-                    onPageChange={controller.setPage}
-                    currentSize={controller.size}
-                    onSizeChange={controller.setSize}
-                    totalCount={controller.totalElements}
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                    onPageChange={onPageChange ?? controller.setPage}
+                    currentSize={currentSize}
+                    onSizeChange={onSizeChange ?? controller.setSize}
+                    totalCount={totalElements}
                 />
             </Box>
         </Paper>
@@ -96,7 +125,7 @@ const GenericSearchablePaginatedList = ({
 
 GenericSearchablePaginatedList.propTypes = {
     title: PropTypes.string,
-    queryHook: PropTypes.func.isRequired,
+    queryHook: PropTypes.func,
     columns: PropTypes.arrayOf(
         PropTypes.shape({
                                 header: PropTypes.node,
@@ -115,6 +144,7 @@ GenericSearchablePaginatedList.propTypes = {
     ),
     addButton: PropTypes.shape({ label: PropTypes.string, tooltip: PropTypes.string, onClick: PropTypes.func }),
     paramMapper: PropTypes.func,
+    initialFilters: PropTypes.object,
     initialPage: PropTypes.number,
     initialPageSize: PropTypes.number,
     tableProps: PropTypes.object,
@@ -123,6 +153,19 @@ GenericSearchablePaginatedList.propTypes = {
         PropTypes.oneOf(['auto']),
         PropTypes.bool
     ]),
+    data: PropTypes.array,
+    totalElements: PropTypes.number,
+    loading: PropTypes.bool,
+    isError: PropTypes.bool,
+    error: PropTypes.any,
+    page: PropTypes.number,
+    size: PropTypes.number,
+    onPageChange: PropTypes.func,
+    onSizeChange: PropTypes.func,
+    search: PropTypes.string,
+    onSearchChange: PropTypes.func,
+    filters: PropTypes.object,
+    onFiltersChange: PropTypes.func,
     rowActions: PropTypes.arrayOf(
         PropTypes.shape({
             label: PropTypes.string.isRequired,
@@ -163,9 +206,12 @@ export function GenericListFilters({
     addButton // { onClick, tooltip?, label? }
 }) {
     const handleAutocompleteChange = (f, newValue) => {
-        const mapped = f.multi
-            ? (newValue || []).map((o) => o.value ?? o.id)
-            : (newValue ? (newValue.value ?? newValue.id) : '');
+        let mapped;
+        if (f.multi) {
+            mapped = (newValue || []).map((o) => (o && typeof o === 'object') ? (o.value ?? o.id) : o);
+        } else {
+            mapped = (newValue && typeof newValue === 'object') ? (newValue.value ?? newValue.id) : (newValue || '');
+        }
         onFiltersChange && onFiltersChange(f.name, mapped);
     };
 
@@ -201,7 +247,7 @@ export function GenericListFilters({
                         const stored = filters?.[f.name];
                         const value = f.multi
                             ? options.filter((opt) => Array.isArray(stored) && stored.includes(opt.value ?? opt.id))
-                            : options.find((opt) => (opt.value ?? opt.id) === stored) || null;
+                            : options.find((opt) => String(opt.value ?? opt.id) === String(stored)) || null;
                         return (
                             <Autocomplete
                                 key={f.name}
@@ -211,7 +257,11 @@ export function GenericListFilters({
                                 value={value}
                                 onChange={(event, newValue) => handleAutocompleteChange(f, newValue)}
                                 getOptionLabel={(option) => option.label ?? option.name ?? String(option.value ?? option.id ?? '')}
-                                isOptionEqualToValue={(opt, val) => (opt.value ?? opt.id) === (val.value ?? val.id)}
+                                isOptionEqualToValue={(opt, val) => {
+                                    const optId = opt.value ?? opt.id;
+                                    const valId = (val && typeof val === 'object') ? (val.value ?? val.id) : val;
+                                    return optId === valId;
+                                }}
                                 renderTags={(tagValue, getTagProps) =>
                                     tagValue.map((option, index) => (
                                         <Chip {...getTagProps({ index })} size="small" key={(option.value ?? option.id) + '-' + index} label={option.label ?? option.name ?? String(option.value ?? option.id)} />
@@ -389,6 +439,7 @@ export function GenericDataTable({
                                                 onClose={closeActionsMenu}
                                                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                                                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                                transitionDuration={0}
                                             >
                                                 {rowActions
                                                     .filter((a) => (typeof a.visible === 'function' ? a.visible(row) : a.visible !== false))
@@ -449,14 +500,19 @@ export function useGenericListController({
     paramMapper,
     initialPage = 0,
     initialPageSize = 10,
-    searchParamName = 'key'
+    searchParamName = 'key',
+    initialFilters = {}
 }) {
     const [page, setPage] = useState(initialPage);
     const [size, setSize] = useState(initialPageSize);
     const [search, setSearch] = useState('');
     const [filters, setFilters] = useState(() => {
-        const init = {};
-        dropdownFilters.forEach((f) => (init[f.name] = f.multi ? [] : ''));
+        const init = { ...initialFilters };
+        dropdownFilters.forEach((f) => {
+            if (init[f.name] === undefined) {
+                init[f.name] = f.multi ? [] : '';
+            }
+        });
         return init;
     });
 

@@ -45,6 +45,7 @@ const tabsOption = [
 
 export default function WorkflowDetails() {
   const { id } = useParams();
+  console.log('WorkflowDetails id:', id);
   const navigate = useNavigate();
   const location = useLocation();
   const initialTabIndex = location.state?.tabIndex || 0;
@@ -81,13 +82,14 @@ export default function WorkflowDetails() {
   const transitionsController = useGenericListController({
     queryHook: (params) => useSearchTransitionsByWorkflow({ ...params, workflowId: id }, { enabled: value === 3 && !!id }),
     dropdownFilters: [],
-    paramMapper: ({ page, size, search }) => ({ page, size, key: search || undefined, workflowId: id })
+    paramMapper: ({ page, size, search }) => ({ page, size, key: search || '', workflowId: id })
   });
 
+  console.log('id 2eme log = ', id)
   const statusGroupsController = useGenericListController({
-    queryHook: (params) => useSearchWorkflowStatusGroups({ ...params }, { enabled: value === 2 }),
+    queryHook: (params) => useSearchWorkflowStatusGroups(id, { ...params }, { enabled: value === 2 && !!id }),
     dropdownFilters: [],
-    paramMapper: ({ page, size, search }) => ({ page, size, key: search || undefined })
+    paramMapper: ({ page, size, search }) => ({ page, size, key: search || '' })
   });
 
   useEffect(() => {

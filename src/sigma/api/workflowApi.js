@@ -55,13 +55,18 @@ export const createWorkflowStatus = async (workflowId, dto) => (await apiClient.
 export const updateWorkflowStatus = async (workflowId, id, dto) => (await apiClient.put(`/workflows/${workflowId}/statuses/${id}`, dto)).data;
 
 // Workflow Status Groups
-export const searchWorkflowStatusGroups = async ({ key, page = 0, size = 10 } = {}) =>
-  (await apiClient.get('/workflow-status-groups/search', { params: { key, page, size } })).data;
+export const searchWorkflowStatusGroups = async (workflowId, { key, page = 0, size = 10 } = {}) =>
+  (await apiClient.get(`/workflow-status-groups/search/${workflowId}`, { params: { key, page, size } })).data;
 export const createWorkflowStatusGroup = async (dto) => (await apiClient.post('/workflow-status-groups', dto)).data;
 export const updateWorkflowStatusGroup = async (id, dto) => (await apiClient.put(`/workflow-status-groups/${id}`, dto)).data;
 export const getWorkflowStatusGroup = async (id) => (await apiClient.get(`/workflow-status-groups/${id}`)).data;
 export const deleteWorkflowStatusGroup = async (id) => (await apiClient.delete(`/workflow-status-groups/${id}`)).data;
 export const getWorkflowStatusGroupAuthorityCodes = async (id) => (await apiClient.get(`/workflow-status-groups/${id}/authority-codes`)).data;
+export const getAccessibleWorkflowStatusGroups = async (workflowCode) =>
+  (await apiClient.get(`/workflow-status-groups/accessible-list/${workflowCode}`)).data;
+
+export const isStatusVisibleByGroup = async (groupCode, statusCode) =>
+  (await apiClient.get('/workflow-status-groups/is-status-visible', { params: { groupCode, statusCode } })).data;
 
 // Workflow Execution
 export const getAvailableTransitions = async (workflowCode, objectType, objectId) =>
@@ -76,3 +81,14 @@ export const applyTransition = async (workflowCode, objectType, objectId, transi
   const url = `/workflows/${workflowCode}/objects/${objectType}/${objectId}/transitions/${transitionId}`;
   return (await apiClient.post(url, fd, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
 };
+
+export const getWorkflowHistory = async (objectType, objectId, { key, transitionIds, page = 0, size = 10 } = {}) => {
+  const params = { key, page, size };
+  if (transitionIds && transitionIds.length > 0) {
+    params.transitionIds = transitionIds.join(',');
+  }
+  return (await apiClient.get(`/workflows/objects/${objectType}/${objectId}/history`, { params })).data;
+};
+
+export const getGeneralInfo = async (objectType, objectId) =>
+  (await apiClient.get(`/workflows/objects/${objectType}/${objectId}/general-info`)).data;

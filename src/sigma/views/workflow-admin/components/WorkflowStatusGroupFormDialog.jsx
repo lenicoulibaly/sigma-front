@@ -56,6 +56,7 @@ export default function WorkflowStatusGroupFormDialog({ open, onClose, initialVa
       name: initialValues?.name || '',
       description: initialValues?.description || '',
       color: initialValues?.color || '#2196f3',
+      ordre: initialValues?.ordre ?? '',
       statusIds: initialValues?.statusIds || [],
       authorityCodes: initialValues?.authorityCodes || [],
       privilegeTypeCodes: initialValues?.privilegeTypeCodes || [],
@@ -66,6 +67,7 @@ export default function WorkflowStatusGroupFormDialog({ open, onClose, initialVa
         id: vals.id,
         code: vals.code,
         name: vals.name,
+        ordre: vals.ordre !== '' ? parseInt(vals.ordre, 10) : undefined,
         description: vals.description || undefined,
         color: vals.color || undefined,
         statusIds: Array.isArray(vals.statusIds) ? vals.statusIds : [],
@@ -90,126 +92,137 @@ export default function WorkflowStatusGroupFormDialog({ open, onClose, initialVa
       actionDisabled={!formik.values.code || !formik.values.name}
       width="md"
     >
-      <Stack spacing={2}>
-        <Grid container rowSpacing={2} columnSpacing={0}>
-          {/* Row 1: Code + Name */}
-          <Grid item xs={12} md={6}>
-            <TextField label="Code" required value={formik.values.code} onChange={formik.handleChange('code')} size="small" fullWidth />
-          </Grid>
-          <Grid item xs={12} md={6} sx={{ pl: { xs: 0, md: 2 } }}>
-            <TextField label="Nom" required value={formik.values.name} onChange={formik.handleChange('name')} size="small" fullWidth />
-          </Grid>
+      <Box sx={{ py: 2 }}>
+        <Stack >
+          <Grid container rowSpacing={2} columnSpacing={2}>
+            {/* Row 1: Code + Name */}
+            <Grid item xs={12} md={6} >
+              <TextField label="Code" required value={formik.values.code} onChange={formik.handleChange('code')} size="small" fullWidth />
+            </Grid>
+            <Grid item xs={12} md={6} >
+              <TextField label="Nom" required value={formik.values.name} onChange={formik.handleChange('name')} size="small" fullWidth />
+            </Grid>
 
-          {/* Row 2: Description */}
-          <Grid item xs={12}>
-            <TextField label="Description" value={formik.values.description} onChange={formik.handleChange('description')} size="small" fullWidth multiline rows={2} />
-          </Grid>
+            {/* Row 2: Description */}
+            <Grid item xs={12}>
+              <TextField label="Description" value={formik.values.description} onChange={formik.handleChange('description')} size="small" fullWidth multiline rows={2} />
+            </Grid>
 
-          {/* Row 3: Color */}
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Couleur"
-              type="text"
-              value={formik.values.color}
-              onChange={(e) => formik.setFieldValue('color', e.target.value)}
-              placeholder="#20a2f3"
-              InputLabelProps={{ shrink: true }}
-              size="small"
-              fullWidth
-              inputProps={{ pattern: '^#?[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$' }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <Box
-                      component="input"
-                      type="color"
-                      value={formik.values.color || '#2196f3'}
-                      onChange={(e) => formik.setFieldValue('color', e.target.value)}
-                      sx={{ width: 28, height: 28, p: 0, border: 'none', bgcolor: 'transparent', cursor: 'pointer' }}
-                    />
-                  </InputAdornment>
-                )
-              }}
-            />
-          </Grid>
+            {/* Row 3: Color + Order */}
+            <Grid item xs={12} md={6} >
+              <TextField
+                label="Couleur"
+                type="text"
+                value={formik.values.color}
+                onChange={(e) => formik.setFieldValue('color', e.target.value)}
+                placeholder="#20a2f3"
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+                inputProps={{ pattern: '^#?[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$' }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Box
+                        component="input"
+                        type="color"
+                        value={formik.values.color || '#2196f3'}
+                        onChange={(e) => formik.setFieldValue('color', e.target.value)}
+                        sx={{ width: 28, height: 28, p: 0, border: 'none', bgcolor: 'transparent', cursor: 'pointer' }}
+                      />
+                    </InputAdornment>
+                  )
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6} >
+              <TextField
+                label="Ordre"
+                type="number"
+                value={formik.values.ordre}
+                onChange={formik.handleChange('ordre')}
+                size="small"
+                fullWidth
+              />
+            </Grid>
 
-          {/* Row 4: Statuses multiselect */}
-          <Grid item xs={12} md={6} sx={{ pl: { xs: 0, md: 2 } }}>
-            <Autocomplete
-              multiple
-              disableCloseOnSelect
-              options={statusOptions}
-              loading={loadingStatuses}
-              getOptionLabel={(opt) => opt?.statusName || ''}
-              isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
-              value={selectedStatuses}
-              onChange={(event, newValue) => {
-                const ids = (newValue || []).map((v) => v.id);
-                formik.setFieldValue('statusIds', ids);
-              }}
-              size="small"
-              fullWidth
-              renderTags={(value, getTagProps) => value.map((option, index) => (
-                <Chip {...getTagProps({ index })} key={option.id} label={option.statusName} />
-              ))}
-              renderInput={(params) => (
-                <TextField {...params} label="États du workflow" placeholder="Sélectionner un ou plusieurs statuts" size="small" fullWidth />
-              )}
-            />
-          </Grid>
+            {/* Row 4: Statuses multiselect (Full width to avoid alignment issues if single) */}
+            <Grid item xs={12} md={6}>
+              <Autocomplete
+                multiple
+                disableCloseOnSelect
+                options={statusOptions}
+                loading={loadingStatuses}
+                getOptionLabel={(opt) => opt?.statusName || ''}
+                isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
+                value={selectedStatuses}
+                onChange={(event, newValue) => {
+                  const ids = (newValue || []).map((v) => v.id);
+                  formik.setFieldValue('statusIds', ids);
+                }}
+                size="small"
+                fullWidth
+                renderTags={(value, getTagProps) => value.map((option, index) => (
+                  <Chip {...getTagProps({ index })} key={option.id} label={option.statusName} />
+                ))}
+                renderInput={(params) => (
+                  <TextField {...params} label="États du workflow" placeholder="Sélectionner un ou plusieurs statuts" size="small" fullWidth />
+                )}
+              />
+            </Grid>
 
-          {/* Row 5: Privilege type filter (multiselect) */}
-          <Grid item xs={12} md={6}>
-            <Autocomplete
-              multiple
-              disableCloseOnSelect
-              options={privilegeTypeOptions}
-              loading={loadingTypes}
-              getOptionLabel={(opt) => opt?.name || ''}
-              isOptionEqualToValue={(opt, val) => opt?.code === val?.code}
-              value={selectedPrivilegeTypes}
-              onChange={(event, newValue) => {
-                const codes = (newValue || []).map((v) => v.code);
-                setSelectedTypeCodes(codes);
-                formik.setFieldValue('privilegeTypeCodes', codes);
-              }}
-              size="small"
-              fullWidth
-              renderTags={(value, getTagProps) => value.map((option, index) => (
-                <Chip {...getTagProps({ index })} key={option.code} label={option.name} />
-              ))}
-              renderInput={(params) => (
-                <TextField {...params} label="Types de privilèges (filtre)" placeholder="Sélectionner un ou plusieurs types" size="small" fullWidth />
-              )}
-            />
-          </Grid>
+            {/* Row 5: Privilege type filter (multiselect) + Authority codes multiselect */}
+            <Grid item xs={12} md={6} >
+              <Autocomplete
+                multiple
+                disableCloseOnSelect
+                options={privilegeTypeOptions}
+                loading={loadingTypes}
+                getOptionLabel={(opt) => opt?.name || ''}
+                isOptionEqualToValue={(opt, val) => opt?.code === val?.code}
+                value={selectedPrivilegeTypes}
+                onChange={(event, newValue) => {
+                  const codes = (newValue || []).map((v) => v.code);
+                  setSelectedTypeCodes(codes);
+                  formik.setFieldValue('privilegeTypeCodes', codes);
+                }}
+                size="small"
+                fullWidth
+                renderTags={(value, getTagProps) => value.map((option, index) => (
+                  <Chip {...getTagProps({ index })} key={option.code} label={option.name} />
+                ))}
+                renderInput={(params) => (
+                  <TextField {...params} label="Types de privilèges (filtre)" placeholder="Sélectionner un ou plusieurs types" size="small" fullWidth />
+                )}
+              />
+            </Grid>
 
-          {/* Row 6: Authority codes multiselect (filtered by types) */}
-          <Grid item xs={12} md={6} sx={{ pl: { xs: 0, md: 2 } }}>
-            <Autocomplete
-              multiple
-              disableCloseOnSelect
-              options={privilegeOptions}
-              loading={loadingPrivileges}
-              getOptionLabel={(opt) => opt?.name || ''}
-              isOptionEqualToValue={(opt, val) => opt?.code === val?.code}
-              value={selectedAuthorities}
-              onChange={(event, newValue) => {
-                const codes = (newValue || []).map((v) => v.code);
-                formik.setFieldValue('authorityCodes', codes);
-              }}
-              size="small"
-              fullWidth
-              renderTags={(value, getTagProps) => value.map((option, index) => (
-                <Chip {...getTagProps({ index })} key={option.code} label={option.name} />
-              ))}
-              renderInput={(params) => (
-                <TextField {...params} label="Codes d'autorité" placeholder="Sélectionner une ou plusieurs autorités" size="small" fullWidth />
-              )}
-            />
+            <Grid item xs={12} md={12} >
+              <Autocomplete
+                multiple
+                disableCloseOnSelect
+                options={privilegeOptions}
+                loading={loadingPrivileges}
+                getOptionLabel={(opt) => opt?.name || ''}
+                isOptionEqualToValue={(opt, val) => opt?.code === val?.code}
+                value={selectedAuthorities}
+                onChange={(event, newValue) => {
+                  const codes = (newValue || []).map((v) => v.code);
+                  formik.setFieldValue('authorityCodes', codes);
+                }}
+                size="small"
+                fullWidth
+                renderTags={(value, getTagProps) => value.map((option, index) => (
+                  <Chip {...getTagProps({ index })} key={option.code} label={option.name} />
+                ))}
+                renderInput={(params) => (
+                  <TextField {...params} label="Codes d'autorité" placeholder="Sélectionner une ou plusieurs autorités" size="small" fullWidth />
+                )}
+              />
+            </Grid>
           </Grid>
-        </Grid>
-      </Stack>
+        </Stack>
+      </Box>
     </Modal>
   );
 }
