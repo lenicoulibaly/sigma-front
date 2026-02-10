@@ -4,17 +4,13 @@ import { useQueryClient } from '@tanstack/react-query';
 
 // material-ui
 import {
+    Autocomplete,
     Box,
     Button,
     Divider,
-    FormControl,
-    FormHelperText,
     Grid,
-    InputLabel,
-    OutlinedInput,
     TextField,
-    Typography,
-    Autocomplete
+    Typography
 } from '@mui/material';
 
 // project imports
@@ -159,92 +155,85 @@ const EditUserModal = ({ open, handleClose, user }) => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.firstName)}>
-                        <InputLabel htmlFor="firstName">Prénom</InputLabel>
-                        <OutlinedInput
-                            id="firstName"
-                            name="firstName"
-                            label="Prénom"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                        />
-                        {errors.firstName && (
-                            <FormHelperText error>{errors.firstName}</FormHelperText>
-                        )}
-                    </FormControl>
+                    <TextField
+                        fullWidth
+                        id="firstName"
+                        name="firstName"
+                        label="Prénom"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        error={Boolean(errors.firstName)}
+                        helperText={errors.firstName}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.lastName)}>
-                        <InputLabel htmlFor="lastName">Nom</InputLabel>
-                        <OutlinedInput
-                            id="lastName"
-                            name="lastName"
-                            label="Nom"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                        />
-                        {errors.lastName && (
-                            <FormHelperText error>{errors.lastName}</FormHelperText>
-                        )}
-                    </FormControl>
+                    <TextField
+                        fullWidth
+                        id="lastName"
+                        name="lastName"
+                        label="Nom"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        error={Boolean(errors.lastName)}
+                        helperText={errors.lastName}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth>
-                        <InputLabel htmlFor="email">Email</InputLabel>
-                        <OutlinedInput
-                            id="email"
-                            name="email"
-                            label="Email"
-                            value={formData.email}
-                            disabled
-                        />
-                        <FormHelperText>L'email ne peut pas être modifié</FormHelperText>
-                    </FormControl>
+                    <TextField
+                        fullWidth
+                        id="email"
+                        name="email"
+                        label="Email"
+                        value={formData.email}
+                        disabled
+                        helperText="L'email ne peut pas être modifié"
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.tel)}>
-                        <InputLabel htmlFor="tel">Téléphone</InputLabel>
-                        <OutlinedInput
-                            id="tel"
-                            name="tel"
-                            label="Téléphone"
-                            value={formData.tel}
-                            onChange={handleChange}
-                        />
-                        {errors.tel && (
-                            <FormHelperText error>{errors.tel}</FormHelperText>
-                        )}
-                    </FormControl>
+                    <TextField
+                        fullWidth
+                        id="tel"
+                        name="tel"
+                        label="Téléphone"
+                        value={formData.tel}
+                        onChange={handleChange}
+                        error={Boolean(errors.tel)}
+                        helperText={errors.tel}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12}>
-                    <FormControl fullWidth error={Boolean(errors.strId)}>
-                        <Autocomplete
-                            id="structure"
-                            options={structures || []}
-                            getOptionLabel={(option) => option.strName || ''}
-                            value={selectedStructure}
-                            onChange={handleStructureChange}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Structure"
-                                    error={Boolean(errors.strId)}
-                                    helperText={errors.strId}
-                                />
-                            )}
-                            isOptionEqualToValue={(option, value) => option.strId === value?.strId}
-                        />
-                    </FormControl>
+                    <Autocomplete
+                        id="structure"
+                        options={structures || []}
+                        getOptionLabel={(option) => option.strName || ''}
+                        value={selectedStructure}
+                        onChange={handleStructureChange}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Structure"
+                                error={Boolean(errors.strId)}
+                                helperText={errors.strId}
+                                size="small"
+                            />
+                        )}
+                        isOptionEqualToValue={(option, value) => option.strId === value?.strId}
+                        size="small"
+                    />
                 </Grid>
 
                 {/* Error message */}
                 {errors.submit && (
                     <Grid item xs={12}>
-                        <FormHelperText error>{errors.submit}</FormHelperText>
+                        <Typography color="error">{errors.submit}</Typography>
                     </Grid>
                 )}
             </Grid>

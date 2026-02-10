@@ -4,14 +4,10 @@ import { useQueryClient } from '@tanstack/react-query';
 
 // material-ui
 import {
+    Autocomplete,
     Box,
     Button,
-    FormControl,
-    FormHelperText,
     Grid,
-    InputLabel,
-    MenuItem,
-    Select,
     TextField,
     Typography
 } from '@mui/material';
@@ -180,72 +176,105 @@ const EditUserProfileModal = ({ open, handleClose, profile }) => {
         >
             <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.profileCode)}>
-                        <InputLabel id="profile-label">Profil</InputLabel>
-                        <Select
-                            labelId="profile-label"
-                            id="profileCode"
-                            name="profileCode"
-                            value={formData.profileCode}
-                            label="Profil"
-                            onChange={handleChange}
-                        >
-                            {profiles?.map((profile) => (
-                                <MenuItem key={profile.code} value={profile.code}>
-                                    {profile.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        {errors.profileCode && (
-                            <FormHelperText error>{errors.profileCode}</FormHelperText>
+                    <Autocomplete
+                        id="profileCode"
+                        options={profiles || []}
+                        getOptionLabel={(option) => option.name || ''}
+                        isOptionEqualToValue={(option, value) => option.code === value.code}
+                        value={profiles?.find((p) => p.code === formData.profileCode) || null}
+                        onChange={(event, newValue) => {
+                            setFormData({
+                                ...formData,
+                                profileCode: newValue ? newValue.code : ''
+                            });
+                            if (errors.profileCode) {
+                                setErrors({
+                                    ...errors,
+                                    profileCode: null
+                                });
+                            }
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Profil"
+                                error={Boolean(errors.profileCode)}
+                                helperText={errors.profileCode}
+                                fullWidth
+                                size="small"
+                            />
                         )}
-                    </FormControl>
+                        loading={isLoadingProfiles}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.strId)}>
-                        <InputLabel id="structure-label">Structure</InputLabel>
-                        <Select
-                            labelId="structure-label"
-                            id="strId"
-                            name="strId"
-                            value={formData.strId}
-                            label="Structure"
-                            onChange={handleChange}
-                        >
-                            {structures?.map((structure) => (
-                                <MenuItem key={structure.strId} value={structure.strId}>
-                                    {structure.strName}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        {errors.strId && (
-                            <FormHelperText error>{errors.strId}</FormHelperText>
+                    <Autocomplete
+                        id="strId"
+                        options={structures || []}
+                        getOptionLabel={(option) => option.strName || ''}
+                        isOptionEqualToValue={(option, value) => option.strId === value.strId}
+                        value={structures?.find((s) => s.strId === formData.strId) || null}
+                        onChange={(event, newValue) => {
+                            setFormData({
+                                ...formData,
+                                strId: newValue ? newValue.strId : ''
+                            });
+                            if (errors.strId) {
+                                setErrors({
+                                    ...errors,
+                                    strId: null
+                                });
+                            }
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Structure"
+                                error={Boolean(errors.strId)}
+                                helperText={errors.strId}
+                                fullWidth
+                                size="small"
+                            />
                         )}
-                    </FormControl>
+                        loading={isLoadingStructures}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={Boolean(errors.userProfileAssTypeCode)}>
-                        <InputLabel id="profile-type-label">Type de profil</InputLabel>
-                        <Select
-                            labelId="profile-type-label"
-                            id="userProfileAssTypeCode"
-                            name="userProfileAssTypeCode"
-                            value={formData.userProfileAssTypeCode}
-                            label="Type de profil"
-                            onChange={handleChange}
-                        >
-                            {profileTypes?.map((type) => (
-                                <MenuItem key={type.code} value={type.code}>
-                                    {type.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                        {errors.userProfileAssTypeCode && (
-                            <FormHelperText error>{errors.userProfileAssTypeCode}</FormHelperText>
+                    <Autocomplete
+                        id="userProfileAssTypeCode"
+                        options={profileTypes || []}
+                        getOptionLabel={(option) => option.name || ''}
+                        isOptionEqualToValue={(option, value) => option.code === value.code}
+                        value={profileTypes?.find((t) => t.code === formData.userProfileAssTypeCode) || null}
+                        onChange={(event, newValue) => {
+                            setFormData({
+                                ...formData,
+                                userProfileAssTypeCode: newValue ? newValue.code : ''
+                            });
+                            if (errors.userProfileAssTypeCode) {
+                                setErrors({
+                                    ...errors,
+                                    userProfileAssTypeCode: null
+                                });
+                            }
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Type de profil"
+                                error={Boolean(errors.userProfileAssTypeCode)}
+                                helperText={errors.userProfileAssTypeCode}
+                                fullWidth
+                                size="small"
+                            />
                         )}
-                    </FormControl>
+                        loading={isLoadingProfileTypes}
+                        size="small"
+                    />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
@@ -258,7 +287,8 @@ const EditUserProfileModal = ({ open, handleClose, profile }) => {
                                 textField: {
                                     fullWidth: true,
                                     error: Boolean(errors.startingDate),
-                                    helperText: errors.startingDate
+                                    helperText: errors.startingDate,
+                                    size: 'small'
                                 }
                             }}
                         />
@@ -273,7 +303,8 @@ const EditUserProfileModal = ({ open, handleClose, profile }) => {
                             onChange={handleEndDateChange}
                             slotProps={{
                                 textField: {
-                                    fullWidth: true
+                                    fullWidth: true,
+                                    size: 'small'
                                 }
                             }}
                         />
