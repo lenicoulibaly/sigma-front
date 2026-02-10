@@ -30,6 +30,7 @@ export default function StatusGroupsTab({
 
       <GenericDataTable
         columns={[
+          { header: 'Ordre', field: 'ordre', width: 80 },
           { header: 'Code', field: 'code', width: 120 },
           { header: 'Nom', field: 'name', width: 200 },
           { header: 'Description', field: 'description', width: 250 },
