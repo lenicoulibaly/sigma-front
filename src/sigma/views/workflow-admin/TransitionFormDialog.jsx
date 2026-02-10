@@ -24,6 +24,7 @@ import {
 import { useFormik } from 'formik';
 import Modal from '../../components/commons/Modal';
 import FloatingAlert from '../../components/commons/FloatingAlert';
+import CustomAlertDialog from '../../components/commons/CustomAlertDialog';
 import {
   useWorkflowStatuses,
   useTransitionRulesByTransition,
@@ -37,9 +38,10 @@ import {
   useUpdateTransitionSideEffect,
   useDeleteTransitionSideEffect,
   useCreateTransition,
-  useUpdateTransition
+  useUpdateTransition,
+  useTransitionsByWorkflow
 } from 'sigma/hooks/query/useWorkflow';
-import { ICON_OPTIONS } from '../../components/commons/IconByName';
+import { getIconOptions } from '../../components/commons/IconByName';
 import { useGetPrivilegesListByTypeCodes } from 'src/sigma/hooks/query/usePrivileges';
 import { useTypesByGroupCode } from 'src/sigma/hooks/query/useTypes';
 import { useEffect, useMemo, useState } from 'react';
@@ -57,6 +59,7 @@ const STEPS = ['Informations générales', 'Règles de transition', 'Effets de b
 export default function TransitionFormDialog({ open, onClose, initialValues, onSubmit, defaultStep = 0 }) {
   const [activeStep, setActiveStep] = useState(defaultStep);
   const [savedTransition, setSavedTransition] = useState(initialValues);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const transitionId = savedTransition?.transitionId;
   const workflowId = initialValues?.workflowId;
 
@@ -64,7 +67,9 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
   const showAlert = (message, severity = 'success') => setAlert({ open: true, message, severity });
 
-  const { data: statuses = [], isLoading: loadingTransitions } = useWorkflowStatuses(workflowId, { enabled: !!workflowId });
+  const { data: statuses = [], isLoading: loadingTransitionsStatuses } = useWorkflowStatuses(workflowId, { enabled: !!workflowId });
+
+  const { data: workflowTransitions = [], isLoading: loadingWorkflowTransitions } = useTransitionsByWorkflow(workflowId, { enabled: !!workflowId });
 
   // Mutations pour la transition (Step 1)
   const { mutateAsync: createTransitionMut } = useCreateTransition();
@@ -76,6 +81,8 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
       setSavedTransition(initialValues);
       setSelectedRuleId(null);
       setSelectedSideEffectId(null);
+      setRuleForm({ ordre: 1, statutDestinationCode: '', active: true, ruleJson: '{\n  \n}' });
+      setSideEffectForm({ name: '', actionType: '', actionConfig: '{\n  \n}', ordre: 0 });
     }
   }, [open, initialValues, defaultStep]);
 
@@ -88,10 +95,15 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
   const sortedRules = useMemo(() => [...rules].sort((a, b) => (a.ordre || 0) - (b.ordre || 0)), [rules]);
 
   useEffect(() => {
-    if (activeStep === 1 && Array.isArray(rules) && rules.length > 0 && !selectedRuleId) {
-      const r0 = rules[0];
-      setSelectedRuleId(r0.id);
-      setRuleForm({ ordre: r0.ordre || 1, statutDestinationCode: r0.statutDestinationCode || '', active: !!r0.active, ruleJson: r0.ruleJson || '' });
+    if (activeStep === 1 && Array.isArray(rules)) {
+      if (rules.length > 0 && !selectedRuleId) {
+        const r0 = rules[0];
+        setSelectedRuleId(r0.id);
+        setRuleForm({ ordre: r0.ordre || 1, statutDestinationCode: r0.statutDestinationCode || '', active: !!r0.active, ruleJson: r0.ruleJson || '' });
+      } else if (rules.length === 0) {
+        setSelectedRuleId(null);
+        setRuleForm({ ordre: 1, statutDestinationCode: '', active: true, ruleJson: '{\n  \n}' });
+      }
     }
   }, [rules, activeStep]);
 
@@ -165,10 +177,15 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
   const sortedSideEffects = useMemo(() => [...sideEffects].sort((a, b) => (a.ordre || 0) - (b.ordre || 0)), [sideEffects]);
 
   useEffect(() => {
-    if (activeStep === 2 && Array.isArray(sideEffects) && sideEffects.length > 0 && !selectedSideEffectId) {
-      const s0 = sideEffects[0];
-      setSelectedSideEffectId(s0.id);
-      setSideEffectForm({ name: s0.name || '', actionType: s0.actionType || '', actionConfig: s0.actionConfig || '{\n  \n}', ordre: s0.ordre || 0 });
+    if (activeStep === 2 && Array.isArray(sideEffects)) {
+      if (sideEffects.length > 0 && !selectedSideEffectId) {
+        const s0 = sideEffects[0];
+        setSelectedSideEffectId(s0.id);
+        setSideEffectForm({ name: s0.name || '', actionType: s0.actionType || '', actionConfig: s0.actionConfig || '{\n  \n}', ordre: s0.ordre || 0 });
+      } else if (sideEffects.length === 0) {
+        setSelectedSideEffectId(null);
+        setSideEffectForm({ name: '', actionType: '', actionConfig: '{\n  \n}', ordre: 0 });
+      }
     }
   }, [sideEffects, activeStep]);
 
@@ -280,6 +297,14 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
   const selectedOrigine = options.find((o) => o.id === formik.values.statutOrigineCode || o.raw?.statusCode === formik.values.statutOrigineCode) || null;
   const selectedDestination = options.find((o) => o.id === formik.values.defaultStatutDestinationCode || o.raw?.statusCode === formik.values.defaultStatutDestinationCode) || null;
 
+  const handleTransitionSwitch = (event, newValue) => {
+    if (newValue) {
+      setSavedTransition(newValue);
+      setSelectedRuleId(null);
+      setSelectedSideEffectId(null);
+    }
+  };
+
   const handleNext = () => {
     if (activeStep < STEPS.length - 1) {
       setActiveStep(activeStep + 1);
@@ -301,17 +326,23 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
 
   const renderActions = () => {
     return (
-      <Stack direction="row" spacing={1} justifyContent="space-between" sx={{ width: '100%' }}>
-        <Box>
+      <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '40px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
           {activeStep > 0 && (
-            <Button startIcon={<NavigateBeforeIcon />} onClick={handleBack}>
+            <Button startIcon={<NavigateBeforeIcon />} onClick={handleBack} size="small">
               Précédent
             </Button>
           )}
         </Box>
-        <Stack direction="row" spacing={1}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {activeStep === 0 && (
-            <Button variant="contained" color="primary" startIcon={<SaveIcon />} onClick={() => formik.submitForm()}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<SaveIcon />}
+              onClick={() => setConfirmOpen(true)}
+              size="small"
+            >
               Enregistrer
             </Button>
           )}
@@ -321,11 +352,12 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
             endIcon={<NavigateNextIcon />}
             onClick={handleNext}
             disabled={(activeStep === 0 && !transitionId) || isLastStep}
+            size="small"
           >
             Suivant
           </Button>
-        </Stack>
-      </Stack>
+        </Box>
+      </Box>
     );
   };
 
@@ -336,12 +368,55 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
       handleClose={onClose}
       width="md"
       actions={renderActions()}
+      headerContent={
+        transitionId && (
+          <Autocomplete
+            size="small"
+            options={workflowTransitions}
+            loading={loadingWorkflowTransitions}
+            getOptionLabel={(option) => option.libelle || ''}
+            isOptionEqualToValue={(option, value) => option.transitionId === value.transitionId}
+            value={workflowTransitions.find((t) => t.transitionId === transitionId) || null}
+            onChange={handleTransitionSwitch}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="Switch transition"
+                variant="outlined"
+                sx={{
+                  width: 350,
+                  '& .MuiOutlinedInput-root': {
+                    color: 'white',
+                    '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+                    '&:hover fieldset': { borderColor: 'white' },
+                    '&.Mui-focused fieldset': { borderColor: 'white' }
+                  },
+                  '& .MuiInputBase-input::placeholder': { color: 'rgba(255,255,255,0.7)', opacity: 1 },
+                  '& .MuiAutocomplete-popupIndicator': { color: 'white' },
+                  '& .MuiAutocomplete-clearIndicator': { color: 'white' }
+                }}
+              />
+            )}
+            disableClearable
+          />
+        )
+      }
     >
       <FloatingAlert
         open={alert.open}
         feedBackMessages={alert.message}
         severity={alert.severity}
         onClose={() => setAlert({ ...alert, open: false })}
+      />
+      <CustomAlertDialog
+        open={confirmOpen}
+        handleClose={() => setConfirmOpen(false)}
+        handleConfirm={() => {
+          formik.submitForm();
+          setConfirmOpen(false);
+        }}
+        title="Confirmation d'enregistrement"
+        content="Voulez-vous vraiment enregistrer cette transition ?"
       />
       <Box sx={{ mb: 1 }}>
         <Stepper activeStep={activeStep} alternativeLabel>
@@ -400,7 +475,7 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
           <Grid item xs={12} sm={6}>
             <Autocomplete
               options={options}
-              loading={loadingTransitions}
+              loading={loadingTransitionsStatuses}
               getOptionLabel={(opt) => opt?.label || ''}
               isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
               value={selectedOrigine}
@@ -418,7 +493,7 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
           <Grid item xs={12} sm={6}>
             <Autocomplete
               options={options}
-              loading={loadingTransitions}
+              loading={loadingTransitionsStatuses}
               getOptionLabel={(opt) => opt?.label || ''}
               isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
               value={selectedDestination}
@@ -463,10 +538,10 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
 
           <Grid item xs={12} sm={6}>
             <Autocomplete
-              options={ICON_OPTIONS}
+              options={getIconOptions()}
               getOptionLabel={(opt) => opt?.label || ''}
               isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
-              value={ICON_OPTIONS.find((o) => o.id === formik.values.icon) || null}
+              value={getIconOptions().find((o) => o.id === formik.values.icon) || null}
               onChange={(event, newValue) => {
                 formik.setFieldValue('icon', newValue?.id || '');
               }}
