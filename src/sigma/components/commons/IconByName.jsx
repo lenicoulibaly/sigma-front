@@ -126,7 +126,15 @@ export const iconMap = {
 };
 
 export function getMuiIcon(name, props) {
-  const Cmp = iconMap[name] || HelpOutlineIcon; // fallback for unknown names
+  let key = name;
+  if (name && typeof name !== 'string') {
+    try {
+      key = String(name);
+    } catch (e) {
+      key = '';
+    }
+  }
+  const Cmp = iconMap[key] || HelpOutlineIcon; // fallback for unknown names
   return <Cmp {...props} />;
 }
 
@@ -135,8 +143,18 @@ export default function IconByName({ name, ...props }) {
 }
 
 // Options for Autocomplete components (id/label/icon)
-export const ICON_OPTIONS = Object.entries(iconMap).map(([id, Cmp]) => ({
-  id,
-  label: id,
-  icon: <Cmp fontSize="small" />
-}));
+// Use a function or lazy-initialize to avoid issues with module initialization and JSX
+let memoIconOptions = null;
+export const getIconOptions = () => {
+  if (!memoIconOptions) {
+    memoIconOptions = Object.entries(iconMap).map(([id, Cmp]) => ({
+      id,
+      label: id,
+      icon: <Cmp fontSize="small" />
+    }));
+  }
+  return memoIconOptions;
+};
+
+// For backward compatibility if needed, but getIconOptions is preferred
+export const ICON_OPTIONS = getIconOptions();

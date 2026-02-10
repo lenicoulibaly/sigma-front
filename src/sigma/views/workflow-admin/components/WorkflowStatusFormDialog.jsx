@@ -3,7 +3,7 @@ import { useFormik } from 'formik';
 import { Box, Grid, Stack, TextField, Autocomplete, FormControlLabel, Switch, InputAdornment } from '@mui/material';
 import Modal from '../../../components/commons/Modal';
 import { useDirectSousTypes, useTypesByGroupCode } from '../../../hooks/query/useTypes';
-import { ICON_OPTIONS } from '../../../components/commons/IconByName';
+import { getIconOptions } from '../../../components/commons/IconByName';
 
 export default function WorkflowStatusFormDialog({ open, onClose, initialValues, onSubmit }) {
   const { data: statusTypes = [], isLoading: loadingStatusTypes } = useDirectSousTypes({ parentCode: 'WKFL_STA' });
@@ -124,10 +124,10 @@ export default function WorkflowStatusFormDialog({ open, onClose, initialValues,
           </Grid>
           <Grid item xs={12} md={6} sx={{ pl: { xs: 0, md: 2 } }}>
             <Autocomplete
-              options={ICON_OPTIONS}
+              options={getIconOptions()}
               getOptionLabel={(opt) => opt?.label || ''}
               isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
-              value={ICON_OPTIONS.find((o) => o.id === formik.values.icon) || null}
+              value={getIconOptions().find((o) => o.id === formik.values.icon) || null}
               onChange={(event, newValue) => {
                 formik.setFieldValue('icon', newValue?.id || '');
               }}
