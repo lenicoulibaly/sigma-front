@@ -27,18 +27,18 @@ const UserDemandesAdhesionList = () => {
         },
         {
             header: 'Association',
-            field: 'associationNom'
+            field: 'assoName'
         },
         {
             header: 'Date Demande',
-            field: 'dateCreation',
-            render: (row) => (row.dateCreation ? new Date(row.dateCreation).toLocaleDateString('fr-FR') : '-')
+            field: 'createdAt',
+            render: (row) => (row.createdAt ? new Date(row.createdAt).toLocaleDateString('fr-FR') : '-')
         },
         {
             header: 'Statut',
             render: (row) => (
                 <StatusBadge
-                    status={{ libelle: row.statutNom, color: row.statutColor, icon: row.statutIcon }}
+                    status={{ libelle: row.statutName, color: row.statutColor, icon: row.statutIcon }}
                     onClick={() => handleNavigate(row)}
                     sx={{ cursor: 'pointer' }}
                 />

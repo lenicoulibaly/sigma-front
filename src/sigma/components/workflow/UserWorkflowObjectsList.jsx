@@ -44,7 +44,7 @@ const UserWorkflowObjectsList = ({
         {
             header: 'Actions',
             render: (row) => {
-                const id = row.id || row.uuid || row.demandeId;
+                const id = row.demandeId;
                 return (
                     <UnifiedActionDropdown
                         workflowCode={workflowCode}
