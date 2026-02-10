@@ -15,7 +15,8 @@ export default function componentStyleOverrides(theme, borderRadius, outlinedFil
             styleOverrides: {
                 root: {
                     fontWeight: 500,
-                    borderRadius: '4px'
+                    borderRadius: '4px',
+                    textTransform: 'none'
                 }
             }
         },
@@ -141,6 +142,7 @@ export default function componentStyleOverrides(theme, borderRadius, outlinedFil
                     borderRadius: `${borderRadius}px`,
                     '&.MuiInputBase-inputSizeSmall': {
                         padding: '10px 14px',
+                        height: '1.4375em', // Ajout d'une hauteur explicite pour correspondre au standard MUI
                         '&.MuiInputBase-inputAdornedStart': {
                             paddingLeft: 0
                         }
@@ -180,6 +182,19 @@ export default function componentStyleOverrides(theme, borderRadius, outlinedFil
                         '.MuiChip-deleteIcon': {
                             color: mode === ThemeMode.DARK ? alpha(theme.palette.text.primary, 0.8) : theme.palette.secondary[200]
                         }
+                    }
+                },
+                inputRoot: {
+                    '&.MuiInputBase-sizeSmall': {
+                        paddingTop: '6px',
+                        paddingBottom: '6px',
+                        paddingLeft: '6px',
+                        '& .MuiAutocomplete-input': {
+                            padding: '1.5px 4px 1.5px 6px'
+                        }
+                    },
+                    '&.MuiInputBase-sizeSmall.MuiInputBase-adornedStart': {
+                        paddingLeft: '12px'
                     }
                 },
                 popper: {
@@ -268,6 +283,13 @@ export default function componentStyleOverrides(theme, borderRadius, outlinedFil
                 flexContainer: {
                     borderBottom: '1px solid',
                     borderColor: mode === ThemeMode.DARK ? alpha(theme.palette.text.primary, 0.2) : theme.palette.grey[200]
+                }
+            }
+        },
+        MuiTab: {
+            styleOverrides: {
+                root: {
+                    textTransform: 'none'
                 }
             }
         },

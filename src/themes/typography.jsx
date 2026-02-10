@@ -59,7 +59,7 @@ const Typography = (theme, borderRadius, fontFamily) => ({
         color: theme.palette.text.primary
     },
     button: {
-        textTransform: 'capitalize'
+        textTransform: 'none'
     },
     customInput: {
         marginTop: 1,
@@ -97,14 +97,14 @@ const Typography = (theme, borderRadius, fontFamily) => ({
         fontWeight: 500,
         color: theme.palette.mode === ThemeMode.DARK ? theme.palette.grey[600] : theme.palette.grey[900],
         padding: '6px',
-        textTransform: 'capitalize',
+        textTransform: 'none',
         marginTop: '10px'
     },
     subMenuCaption: {
         fontSize: '0.6875rem',
         fontWeight: 500,
         color: theme.palette.text.secondary,
-        textTransform: 'capitalize'
+        textTransform: 'none'
     },
     commonAvatar: {
         cursor: 'pointer',

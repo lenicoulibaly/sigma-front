@@ -81,7 +81,7 @@ const Modal = ({ open, printVisible=false, newVisible=false,
                 {children}
             </DialogContent>
             {(actions || actionVisible) && (
-                <DialogActions sx={{ py: 1, px: 2 }}>
+                <DialogActions sx={{ py: 0, px: 2 }}>
                     {actions ? (
                         actions
                     ) : (
@@ -89,14 +89,14 @@ const Modal = ({ open, printVisible=false, newVisible=false,
                             <Box sx={{ display: 'flex', justifyContent: 'flex-start', width: '100%' }}>
                                 {printVisible && (
                                     <Tooltip placement="top" title="Imprimer">
-                                        <IconButton color={printButtonColor} aria-label="Print" size="large" onClick={handlePrint}>
+                                        <IconButton color={printButtonColor} aria-label="Print" size="small" onClick={handlePrint} sx={{ p: 0.5 }}>
                                             <PrintIcon sx={{ fontSize: '2rem' }} />
                                         </IconButton>
                                     </Tooltip>
                                 )}
                                 {newVisible && (
                                     <Tooltip placement="top" title="Nouveau">
-                                        <IconButton aria-label="New" size="large" onClick={handleNew}>
+                                        <IconButton aria-label="New" size="small" onClick={handleNew} sx={{ p: 0.5 }}>
                                             <AddBoxIcon sx={{ fontSize: '2rem' }} />
                                         </IconButton>
                                     </Tooltip>
@@ -108,6 +108,8 @@ const Modal = ({ open, printVisible=false, newVisible=false,
                                 openLabel={actionLabel || 'Enregistrer'}
                                 handleConfirmation={handleConfirmation}
                                 TriggerIcon={<SaveIcon sx={{ fontSize: '2rem' }} />}
+                                triggerSize="small"
+                                triggerStyle={{ p: 0.5 }}
                             />
                         </>
                     )}
