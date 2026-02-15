@@ -19,7 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import MainCard from 'ui-component/cards/MainCard';
 import { gridSpacing } from 'store/constant';
-import { useWorkflow, useUpdateWorkflow, useCreateTransition, useUpdateTransition, useDeleteTransition, useSearchWorkflowStatuses, useSearchTransitionsByWorkflow, useSearchWorkflowStatusGroups, useCreateWorkflowStatusGroup, useUpdateWorkflowStatusGroup, useDeleteWorkflowStatusGroup, TRANSITION_QUERY_KEYS, WORKFLOW_STATUS_QUERY_KEYS, WORKFLOW_STATUS_GROUP_QUERY_KEYS } from 'sigma/hooks/query/useWorkflow';
+import { useWorkflow, useWorkflowStatuses, useUpdateWorkflow, useCreateTransition, useUpdateTransition, useDeleteTransition, useSearchWorkflowStatuses, useSearchTransitionsByWorkflow, useSearchWorkflowStatusGroups, useCreateWorkflowStatusGroup, useUpdateWorkflowStatusGroup, useDeleteWorkflowStatusGroup, TRANSITION_QUERY_KEYS, WORKFLOW_STATUS_QUERY_KEYS, WORKFLOW_STATUS_GROUP_QUERY_KEYS } from 'sigma/hooks/query/useWorkflow';
 import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
 import { useGenericListController } from 'src/sigma/components/commons/GenericSearchablePaginatedList';
 import DetailsTab from './tabs/DetailsTab';
@@ -70,7 +70,8 @@ export default function WorkflowDetails() {
     const [alertMessage, setAlertMessage] = useState('');
     const [alertSeverity, setAlertSeverity] = useState('info');
 
-    const { data: wf, isLoading: wfLoading, refetch: refetchWf } = useWorkflow(id);
+  const { data: wf, isLoading: wfLoading, refetch: refetchWf } = useWorkflow(id);
+  const { data: workflowStatuses } = useWorkflowStatuses(id, { enabled: !!id });
 
   // Controllers for generic lists
   const statusesController = useGenericListController({
@@ -81,8 +82,28 @@ export default function WorkflowDetails() {
 
   const transitionsController = useGenericListController({
     queryHook: (params) => useSearchTransitionsByWorkflow({ ...params, workflowId: id }, { enabled: value === 3 && !!id }),
-    dropdownFilters: [],
-    paramMapper: ({ page, size, search }) => ({ page, size, key: search || '', workflowId: id })
+    dropdownFilters: [
+      {
+        name: 'originStatusCodes',
+        label: 'Statuts origine',
+        options: (workflowStatuses || []).map((s) => ({ value: s.statusCode, label: s.statusName })),
+        multi: true
+      },
+      {
+        name: 'destinationStatusCodes',
+        label: 'Statuts destination',
+        options: (workflowStatuses || []).map((s) => ({ value: s.statusCode, label: s.statusName })),
+        multi: true
+      }
+    ],
+    paramMapper: ({ page, size, search, filters }) => ({
+      page,
+      size,
+      key: search || '',
+      workflowId: id,
+      originStatusCodes: filters?.originStatusCodes,
+      destinationStatusCodes: filters?.destinationStatusCodes
+    })
   });
 
   console.log('id 2eme log = ', id)

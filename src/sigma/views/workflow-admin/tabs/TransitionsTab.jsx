@@ -27,9 +27,9 @@ export default function TransitionsTab({
         search={controller.search}
         onSearchChange={controller.setSearch}
         searchLabel="Rechercher une transition (libellé, privilège)"
-        dropdownFilters={[]}
-        filters={{}}
-        onFiltersChange={() => {}}
+        dropdownFilters={controller.dropdownFilters}
+        filters={controller.filters}
+        onFiltersChange={controller.setFilterValue}
         addButton={{ tooltip: 'Ajouter une transition', onClick: addTransition }}
       />
 

@@ -18,8 +18,16 @@ export const createTransition = async (payload) => (await apiClient.post('/trans
 export const updateTransition = async (id, payload) => (await apiClient.put(`/transitions/${id}`, payload)).data;
 export const deleteTransition = async (id) => (await apiClient.delete(`/transitions/${id}`)).data;
 export const listTransitionsByWorkflow = async (workflowId) => (await apiClient.get(`/transitions/by-workflow/${workflowId}`)).data;
-export const searchTransitionsByWorkflow = async ({ workflowId, key, page = 0, size = 10 } = {}) =>
-  (await apiClient.get(`/transitions/by-workflow/${workflowId}/search`, { params: { key, page, size } })).data;
+export const searchTransitionsByWorkflow = async ({ workflowId, key, originStatusCodes, destinationStatusCodes, page = 0, size = 10 } = {}) => {
+  const params = { key, page, size };
+  if (originStatusCodes && originStatusCodes.length > 0) {
+    params.originStatusCodes = originStatusCodes.join(',');
+  }
+  if (destinationStatusCodes && destinationStatusCodes.length > 0) {
+    params.destinationStatusCodes = destinationStatusCodes.join(',');
+  }
+  return (await apiClient.get(`/transitions/by-workflow/${workflowId}/search`, { params })).data;
+};
 export const reorderTransitions = async (items) => (await apiClient.post('/transitions/reorder', items)).data;
 export const testTransition = async (id, facts) => (await apiClient.post(`/transitions/${id}/_test`, { facts })).data;
 

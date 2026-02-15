@@ -537,6 +537,8 @@ export function useGenericListController({
     const currentPage = data?.number ?? data?.page ?? page;
 
     return {
+        // config
+        dropdownFilters,
         // state
         page,
         size,
