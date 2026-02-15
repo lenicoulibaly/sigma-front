@@ -24,20 +24,29 @@ const WorkflowStatusTabsList = ({ workflowCode, onGroupChange, defaultGroupId, c
       if (groups.length > 0) {
         if (typeof checkGroupEmpty === 'function') {
           setIsFiltering(true);
-          const results = await Promise.all(
-            groups.map(async (group) => {
-              if (group.code === 'BROUIL') {
-                const isEmpty = await checkGroupEmpty(group);
-                return isEmpty ? null : group;
-              }
-              return group;
-            })
-          );
-          setFilteredGroups(results.filter((g) => g !== null));
-          setIsFiltering(false);
+          try {
+            const results = await Promise.all(
+              groups.map(async (group) => {
+                if (group.code === 'BROUIL') {
+                  const isEmpty = await checkGroupEmpty(group);
+                  return isEmpty ? null : group;
+                }
+                return group;
+              })
+            );
+            const filtered = results.filter((g) => g !== null);
+            setFilteredGroups(filtered);
+          } catch (error) {
+            console.error('Error filtering groups:', error);
+            setFilteredGroups(groups);
+          } finally {
+            setIsFiltering(false);
+          }
         } else {
           setFilteredGroups(groups);
         }
+      } else if (!isLoading) {
+        setFilteredGroups([]);
       }
     };
 
@@ -61,10 +70,12 @@ const WorkflowStatusTabsList = ({ workflowCode, onGroupChange, defaultGroupId, c
         if (typeof onGroupChange === 'function') {
           onGroupChange(filteredGroups[index]);
         }
+        setIsInitialLoad(false);
+      } else if (groups.length === 0 && !isLoading) {
+        setIsInitialLoad(false);
       }
-      setIsInitialLoad(false);
     }
-  }, [filteredGroups, defaultGroupId, onGroupChange, isInitialLoad, isLoading, isFiltering]);
+  }, [filteredGroups, groups, defaultGroupId, onGroupChange, isInitialLoad, isLoading, isFiltering]);
 
   const handleChange = (event, newValue) => {
     setSelectedTab(newValue);

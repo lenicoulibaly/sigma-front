@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 // mui
@@ -6,6 +6,7 @@ import {
   Box,
   Grid,
   Button,
+  Stack,
   Typography,
   TextField,
   Autocomplete,
@@ -18,7 +19,13 @@ import {
   InputAdornment,
   Checkbox,
   FormControlLabel,
-  Tooltip
+  Tooltip,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -32,15 +39,18 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import SaveIcon from '@mui/icons-material/Save';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import DownloadIcon from '@mui/icons-material/Download';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 // project imports
 import Modal from 'src/sigma/components/commons/Modal';
 import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
+import CustomAlertDialog from 'src/sigma/components/commons/CustomAlertDialog';
 import { useOpenStructuresSearch } from 'src/sigma/hooks/query/useStructures';
 import { useTypesByGroupCode, useDirectSousTypes } from 'src/sigma/hooks/query/useTypes';
-import { useOpenAssociationsList } from 'src/sigma/hooks/query/useAssociations';
-import { useCreateUserAndDemandeAdhesion } from 'src/sigma/hooks/query/useDemandeAdhesion';
-import { useLatestDocument } from 'src/sigma/hooks/query/useDocuments';
+import { useAssociationDetails, useOpenAssociationsList } from 'src/sigma/hooks/query/useAssociations';
+import { useCreateUserAndDemandeAdhesion, useUpdateDemandeAdhesion, useDemandeAdhesionById } from 'src/sigma/hooks/query/useDemandeAdhesion';
+import { useDownloadDocument, useLatestDocument } from 'src/sigma/hooks/query/useDocuments';
 import { IFrameModal } from 'src/sigma/components/commons/IFrameModal';
 
 // Styled frames (same spirit as AssociationModal & RegisterUserModal)
@@ -84,13 +94,15 @@ const emptyDocumentRow = () => ({
 
 // ==============================|| REGISTER USER WIZARD (2 STEPS) ||============================== //
 
-const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', defaultObjectTableName = 'DEMANDE_ADHESION', onRegistered }) => {
+const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', defaultObjectTableName = 'DEMANDE_ADHESION', onRegistered, mode = 'create', row = null }) => {
+  const isEdit = mode === 'edit';
   // Stepper
   const steps = ['Infos personnelles & professionnelles', 'Association & pièces jointes'];
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeStep, setActiveStep] = useState(isEdit ? 1 : 0);
 
   // Alerts
   const [alert, setAlert] = useState({ open: false, severity: 'success', message: '' });
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Data sources
   const [structureQuery, setStructureQuery] = useState('');
@@ -100,10 +112,8 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
   const { data: emplois = [], isLoading: loadingEmplois } = useTypesByGroupCode('EMPLOI');
   const { data: docTypes = [], isLoading: loadingDocTypes } = useDirectSousTypes({ parentCode: docParentCode });
 
-  // Associations search (open list for autocomplete)
-  const [assoQuery, setAssoQuery] = useState('');
-  const [assoInput, setAssoInput] = useState('');
-  const { data: associations = [], isLoading: loadingAssociations } = useOpenAssociationsList(assoQuery);
+  // Associations (non paged list)
+  const { data: associations = [], isLoading: loadingAssociations } = useOpenAssociationsList();
 
   // Form state mapped to UserDTO
   const [values, setValues] = useState({
@@ -130,6 +140,53 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
   });
 
   const createWithDemande = useCreateUserAndDemandeAdhesion();
+  const updateDemande = useUpdateDemandeAdhesion();
+  const downloadMutation = useDownloadDocument();
+
+  // Helper to check if a document is previewable
+  const isPreviewable = (mimeType) => {
+    return ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'].includes(mimeType);
+  };
+
+  const handleDownload = async (docId, filename) => {
+    try {
+      const { blob, filename: serverFilename } = await downloadMutation.mutateAsync(docId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename || serverFilename || 'document');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setAlert({ open: true, message: "Erreur lors du téléchargement du document", severity: 'error' });
+    }
+  };
+
+  const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result || '';
+      const base64 = typeof result === 'string' ? result.split(',')[1] : '';
+      resolve(base64 || '');
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+  const handlePreview = async (doc) => {
+    try {
+      const { blob, mimeType, filename } = await downloadMutation.mutateAsync(doc.docId);
+      const base64 = await blobToBase64(blob);
+      setViewerBase64(base64);
+      setViewerMime(doc.docMimeType || mimeType || 'application/pdf');
+      setViewerTitle(doc.docName || filename || 'Aperçu du document');
+      setViewerOpen(true);
+    } catch (error) {
+      setAlert({ open: true, message: "Impossible de prévisualiser le document", severity: 'error' });
+    }
+  };
 
   // Latest association docs (charte & statuts/règlements)
   const { data: latestCharteDoc } = useLatestDocument({
@@ -142,6 +199,47 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     objectId: values.assoId,
     objectTableName: 'ASSOCIATION',
   }, { enabled: !!values.assoId });
+
+  // Association details for Approbations (pieces à fournir)
+  const { data: associationDetails } = useAssociationDetails(values.assoId, { enabled: !!values.assoId });
+
+  // Fetch full data if row is incomplete (missing documents)
+  const objectId = isEdit ? (row?.demandeId || row?.id) : null;
+  const { data: fullRow, isLoading: loadingFullRow } = useDemandeAdhesionById(objectId);
+
+  useEffect(() => {
+    if (open && isEdit && row) {
+      const dataToUse = (fullRow && (fullRow.documents?.length > 0)) ? fullRow : row;
+      setValues({
+        email: dataToUse.demandeurEmail || dataToUse.email || '',
+        matricule: dataToUse.matricule || '',
+        gradeCode: dataToUse.gradeCode || '',
+        firstName: dataToUse.demandeurPrenom || dataToUse.firstName || '',
+        lastName: dataToUse.demandeurNom || dataToUse.lastName || '',
+        codeCivilite: dataToUse.codeCivilite || '',
+        tel: dataToUse.demandeurTel || dataToUse.tel || '',
+        strId: dataToUse.strId || null,
+        adresse: dataToUse.adresse || '',
+        lieuNaissance: dataToUse.lieuNaissance || '',
+        dateNaissance: dataToUse.dateNaissance ? new Date(dataToUse.dateNaissance) : null,
+        emploiCode: dataToUse.emploiCode || '',
+        emploiName: dataToUse.emploiName || '',
+        datePremierePriseService: dataToUse.datePremierePriseService ? new Date(dataToUse.datePremierePriseService) : null,
+        indice: dataToUse.indice || '',
+        assoId: dataToUse.assoId || null,
+        accepteRgpd: dataToUse.accepteRgpd || false,
+        accepteCharte: dataToUse.accepteCharte || false,
+        accepteStatutsReglements: dataToUse.accepteStatutsReglements || false,
+        documents: dataToUse.documents && dataToUse.documents.length > 0 
+          ? dataToUse.documents.map(d => ({ ...d, id: d.docId || d.id || Math.random().toString(36).slice(2) }))
+          : [emptyDocumentRow()]
+      });
+      if (dataToUse.strName) setStructureInput(dataToUse.strName);
+      setActiveStep(1);
+    } else if (open && !isEdit) {
+      reset();
+    }
+  }, [open, isEdit, row, fullRow]);
 
   // Viewer state for documents
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -197,8 +295,8 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
       email: '', matricule: '', gradeCode: '', firstName: '', lastName: '', codeCivilite: '', tel: '', strId: null, adresse: '', lieuNaissance: '', dateNaissance: null,
       emploiCode: '', emploiName: '', datePremierePriseService: null, indice: '', assoId: null, accepteRgpd: false, accepteCharte: false, accepteStatutsReglements: false, documents: [emptyDocumentRow()]
     });
-    setAssoInput('');
-    setAssoQuery('');
+    setStructureInput('');
+    setStructureQuery('');
     setActiveStep(0);
   };
 
@@ -207,7 +305,13 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
   const onCloseAlert = () => setAlert((a) => ({ ...a, open: false }));
 
   const handleSubmit = async () => {
-    // Build payload matching AdhesionDTO for /demandes-adhesion/inscription
+    if (isEdit && !confirmOpen) {
+      setConfirmOpen(true);
+      return;
+    }
+    setConfirmOpen(false);
+
+    // Build payload matching AdhesionDTO
     const payload = {
       // Required confirmations
       accepteRgpd: values.accepteRgpd === true,
@@ -235,31 +339,53 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
 
       // Documents -> UploadDocReq list
       documents: (values.documents || [])
-        .filter((d) => d.docTypeCode && d.file)
+        .filter((d) => d.docTypeCode && (d.file || d.docId || d.id)) // include existing docs in edit mode
         .map((d) => ({
-          objectId: undefined, // new user won't have id yet
+          objectId: isEdit ? (row.demandeId || row.id) : undefined,
+          docId: d.docId || (typeof d.id === 'number' ? d.id : undefined),
           docTypeCode: d.docTypeCode,
           docNum: d.docNum || undefined,
           docName: d.docName || undefined,
           docDescription: d.docDescription || undefined,
           file: d.file,
-          objectTableName: defaultObjectTableName
+          objectTableName: isEdit ? 'demandes_adhesion' : defaultObjectTableName
         }))
     };
 
     try {
-      await createWithDemande.mutateAsync(payload);
-      showAlert('Demande d\'adhésion soumise avec succès', 'success');
+      if (isEdit) {
+        const id = row.demandeId || row.id;
+        // DTO spécifique demandé pour la mise à jour
+        const updatePayload = {
+          demandeurNom: values.lastName,
+          demandeurPrenom: values.firstName,
+          demandeurEmail: values.email,
+          demandeurTel: values.tel,
+          assoId: values.assoId,
+          accepteRgpd: values.accepteRgpd,
+          accepteCharte: values.accepteCharte,
+          accepteStatutsReglements: values.accepteStatutsReglements,
+          documents: payload.documents
+        };
+        await updateDemande.mutateAsync({ id, dto: updatePayload });
+        showAlert("Demande mise à jour avec succès", 'success');
+      } else {
+        await createWithDemande.mutateAsync(payload);
+        showAlert('Demande d\'adhésion soumise avec succès', 'success');
+      }
+      
       if (typeof onRegistered === 'function') onRegistered();
-      reset();
-      handleClose?.();
+      setTimeout(() => {
+        handleClose?.();
+        if (!isEdit) reset();
+      }, 1500);
     } catch (e) {
       const apiMsgs = e?.response?.data;
       let msg = '';
       if (Array.isArray(apiMsgs)) msg = apiMsgs.filter(Boolean).join('\n');
       else if (typeof apiMsgs === 'string') msg = apiMsgs;
       else msg = e?.message;
-      showAlert(msg || 'Échec de la soumission de la demande', 'error');
+      showAlert(msg || "Échec de l'opération", 'error');
     }
   };
 
@@ -270,7 +396,9 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     [structures]
   );
   const associationOptions = useMemo(
-    () => (associations || []).map((a) => ({ id: a?.assoId ?? a?.id, label: a?.assoName || a?.sigle || a?.name || a?.libelle })),
+    () => {
+      return (associations || []).map((a) => ({ id: a.assoId, label: a.assoName || a.sigle }));
+    },
     [associations]
   );
   const docTypeOptions = useMemo(() => (docTypes || []).map((t) => ({ code: t.code || t.value || t.key, label: t.libelle || t.label || t.name || t.code })), [docTypes]);
@@ -293,10 +421,10 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
         <Grid container spacing={2}>
 
           <Grid item xs={12} sm={6}>
-            <TextField size="small" fullWidth label="Nom" value={values.lastName} onChange={(e) => setField('lastName', e.target.value)} error={!!requiredErrors.lastName} helperText={requiredErrors.lastName || ''} />
+            <TextField size="small" fullWidth label="Nom" value={values.lastName} onChange={(e) => setField('lastName', e.target.value)} error={!!requiredErrors.lastName} helperText={requiredErrors.lastName || ''} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField size="small" fullWidth label="Prénom" value={values.firstName} onChange={(e) => setField('firstName', e.target.value)} error={!!requiredErrors.firstName} helperText={requiredErrors.firstName || ''} />
+            <TextField size="small" fullWidth label="Prénom" value={values.firstName} onChange={(e) => setField('firstName', e.target.value)} error={!!requiredErrors.firstName} helperText={requiredErrors.firstName || ''} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={4}>
                 <Autocomplete
@@ -307,24 +435,25 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                     onChange={(_e, opt) => setField('codeCivilite', opt?.code || '')}
                     getOptionLabel={(opt) => opt?.label || ''}
                     renderInput={(params) => <TextField {...params} label="Civilité" />}
+                    readOnly={isEdit}
                 />
           </Grid>
           <Grid item xs={12} sm={4}>
             <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
-              <DatePicker label="Date de naissance" value={values.dateNaissance} onChange={(d) => setField('dateNaissance', d)} slotProps={{ textField: { fullWidth: true, size: 'small' } }} />
+              <DatePicker label="Date de naissance" value={values.dateNaissance} onChange={(d) => setField('dateNaissance', d)} slotProps={{ textField: { fullWidth: true, size: 'small', inputProps: { readOnly: isEdit } } }} readOnly={isEdit} />
             </LocalizationProvider>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField size="small" fullWidth label="Lieu de naissance" value={values.lieuNaissance} onChange={(e) => setField('lieuNaissance', e.target.value)} />
+            <TextField size="small" fullWidth label="Lieu de naissance" value={values.lieuNaissance} onChange={(e) => setField('lieuNaissance', e.target.value)} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField size="small" fullWidth label="Téléphone" value={values.tel} onChange={(e) => setField('tel', e.target.value)} error={!!requiredErrors.tel} helperText={requiredErrors.tel || ''} />
+            <TextField size="small" fullWidth label="Téléphone" value={values.tel} onChange={(e) => setField('tel', e.target.value)} error={!!requiredErrors.tel} helperText={requiredErrors.tel || ''} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField size="small" fullWidth label="Email" value={values.email} onChange={(e) => setField('email', e.target.value)} />
+            <TextField size="small" fullWidth label="Email" value={values.email} onChange={(e) => setField('email', e.target.value)} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField size="small" fullWidth label="Adresse" value={values.adresse} onChange={(e) => setField('adresse', e.target.value)} />
+            <TextField size="small" fullWidth label="Adresse" value={values.adresse} onChange={(e) => setField('adresse', e.target.value)} inputProps={{ readOnly: isEdit }} />
           </Grid>
         </Grid>
       </LabeledFrame>
@@ -337,7 +466,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
         </FrameLabel>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={4}>
-            <TextField size="small" fullWidth label="Matricule" value={values.matricule} onChange={(e) => setField('matricule', e.target.value)} />
+            <TextField size="small" fullWidth label="Matricule" value={values.matricule} onChange={(e) => setField('matricule', e.target.value)} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={2}>
             <Autocomplete
@@ -349,6 +478,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               value={gradeOptions.find((o) => o.code === values.gradeCode) || null}
               onChange={(_e, opt) => setField('gradeCode', opt?.code || '')}
               renderInput={(params) => <TextField {...params} label="Grade" />}
+              readOnly={isEdit}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -361,12 +491,13 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               value={emploiOptions.find((o) => o.id === values.emploiCode) || null}
               onChange={(_e, opt) => setField('emploiCode', opt?.id || '')}
               renderInput={(params) => <TextField {...params} label="Emploi" />}
+              readOnly={isEdit}
             />
           </Grid>
 
           <Grid item xs={12} sm={4}>
             <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
-              <DatePicker label="Première prise de service" value={values.datePremierePriseService} onChange={(d) => setField('datePremierePriseService', d)} slotProps={{ textField: { fullWidth: true, size: 'small' } }} />
+              <DatePicker label="Première prise de service" value={values.datePremierePriseService} onChange={(d) => setField('datePremierePriseService', d)} slotProps={{ textField: { fullWidth: true, size: 'small', inputProps: { readOnly: isEdit } } }} readOnly={isEdit} />
             </LocalizationProvider>
           </Grid>
           <Grid item xs={12} sm={2}>
@@ -381,7 +512,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               }}
               error={!!indiceError}
               helperText={indiceError || ''}
-              inputProps={{ inputMode: 'numeric' }}
+              inputProps={{ inputMode: 'numeric', readOnly: isEdit }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -404,6 +535,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                     clearOnBlur={false}
                     getOptionLabel={(o) => o?.label || ''}
                     renderInput={(params) => <TextField {...params} label="Structure" />}
+                    readOnly={isEdit}
                 />
           </Grid>
         </Grid>
@@ -441,28 +573,12 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               options={associationOptions}
               isOptionEqualToValue={(option, value) => option.id === value.id}
               value={associationOptions.find((o) => o.id === values.assoId) || null}
-              inputValue={assoInput}
               onChange={(_e, opt) => {
                 setField('assoId', opt?.id ?? null);
                 // Reset approvals when association changes
                 setField('accepteCharte', false);
                 setField('accepteStatutsReglements', false);
-                if (opt?.label) setAssoInput(opt.label);
               }}
-              onInputChange={(_e, input, reason) => {
-                if (reason === 'input') {
-                  const val = input || '';
-                  setAssoInput(val);
-                  setAssoQuery(val.trim());
-                } else if (reason === 'clear') {
-                  setAssoInput('');
-                  setAssoQuery('');
-                } else {
-                  setAssoInput(input || '');
-                }
-              }}
-              filterOptions={(x) => x}
-              clearOnBlur={false}
               getOptionLabel={(o) => o?.label || ''}
               renderInput={(params) => (
                 <TextField
@@ -471,6 +587,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                   placeholder="Nom, sigle, ..."
                 />
               )}
+              readOnly={isEdit}
             />
           </Grid>
         </Grid>
@@ -478,6 +595,30 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
 
       <LabeledFrame>
         <FrameLabel>Approbations</FrameLabel>
+        
+        {associationDetails?.piecesAFournir && associationDetails.piecesAFournir.length > 0 && (
+          <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Type de pièce</TableCell>
+                  <TableCell>Statut</TableCell>
+                  <TableCell>Description</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {associationDetails.piecesAFournir.map((piece, index) => (
+                  <TableRow key={piece.pieceId ?? index}>
+                    <TableCell>{piece.typePieceName}</TableCell>
+                    <TableCell>{piece.statutObligationName}</TableCell>
+                    <TableCell>{piece.description}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
         <Grid container spacing={1} sx={{ mb: 1 }}>
           <Grid item xs={12} md={6}>
             <FormControlLabel
@@ -533,14 +674,54 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                 <Grid item xs={12} md={4}>
                   <TextField
                     fullWidth size="small" label="Fichier" placeholder="Choisir un fichier"
-                    value={row.file?.name || ''} disabled
+                    value={row.file?.name || row.docName || ''} disabled
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
-                          <Button component="label" variant="contained" size="small">
-                            Choisir
-                            <input hidden type="file" onChange={(e) => updateDocField(row.id, 'file', e.target.files?.[0] || null)} />
-                          </Button>
+                          <Stack direction="row" spacing={0.5}>
+                            {row.docId && (
+                              <>
+                                {isPreviewable(row.docMimeType) && (
+                                  <Tooltip title="Prévisualiser">
+                                    <IconButton size="small" color="primary" onClick={() => handlePreview(row)}>
+                                      <VisibilityIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                                <Tooltip title="Télécharger">
+                                  <IconButton size="small" color="secondary" onClick={() => handleDownload(row.docId, row.docName)}>
+                                    <DownloadIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            )}
+                            {row.file && isPreviewable(row.file.type) && (
+                              <Tooltip title="Prévisualiser le nouveau fichier">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={async () => {
+                                    try {
+                                      const base64 = await blobToBase64(row.file);
+                                      const typeLabel = docTypeOptions.find(opt => opt.code === row.docTypeCode)?.label || '';
+                                      setViewerBase64(base64);
+                                      setViewerMime(row.file.type);
+                                      setViewerTitle(typeLabel);
+                                      setViewerOpen(true);
+                                    } catch (error) {
+                                      setAlert({ open: true, message: "Impossible de prévisualiser ce fichier", severity: 'error' });
+                                    }
+                                  }}
+                                >
+                                  <VisibilityIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            <Button component="label" variant="contained" size="small">
+                              Choisir
+                              <input hidden type="file" onChange={(e) => updateDocField(row.id, 'file', e.target.files?.[0] || null)} />
+                            </Button>
+                          </Stack>
                         </InputAdornment>
                       )
                     }}
@@ -590,14 +771,14 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     <>
       <Modal
         open={!!open}
-        title={'Inscription utilisateur'}
-        width={'md'}
+        title={isEdit ? "Modifier la demande d'adhésion" : 'Inscription utilisateur'}
+        width="lg"
         handleClose={handleClose}
         actionVisible={false}
         actions={
           <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
             <Box>
-              {activeStep > 0 && (
+              {!isEdit && activeStep > 0 && (
                 <Button variant="outlined" startIcon={<NavigateBeforeIcon />} onClick={handleBack}>
                   Précédent
                 </Button>
@@ -619,10 +800,10 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                   variant="contained"
                   startIcon={<SaveIcon />}
                   onClick={handleSubmit}
-                  disabled={!canSubmit || createWithDemande.isLoading}
+                  disabled={!canSubmit || (isEdit ? updateDemande.isLoading : createWithDemande.isLoading)}
                   color="secondary"
                 >
-                  {createWithDemande.isLoading ? 'Envoi…' : 'Terminer'}
+                  { (isEdit ? updateDemande.isLoading : createWithDemande.isLoading) ? 'Enregistrement...' : (isEdit ? 'Modifier' : 'Terminer') }
                 </Button>
               )}
             </Box>
@@ -653,6 +834,16 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
         handleClose={() => { setViewerOpen(false); setViewerBase64(''); }}
       />
 
+      <CustomAlertDialog
+        open={confirmOpen}
+        handleClose={() => setConfirmOpen(false)}
+        handleConfirm={handleSubmit}
+        title="Confirmation de modification"
+        content="Voulez-vous vraiment modifier cette demande d'adhésion ?"
+        confirmBtnText="Modifier"
+        loading={updateDemande.isLoading}
+      />
+
       <FloatingAlert open={alert.open} message={alert.message} severity={alert.severity} onClose={onCloseAlert} />
     </>
   );
@@ -663,7 +854,9 @@ RegisterUserWizard.propTypes = {
   handleClose: PropTypes.func,
   docParentCode: PropTypes.string,
   defaultObjectTableName: PropTypes.string,
-  onRegistered: PropTypes.func
+  onRegistered: PropTypes.func,
+  mode: PropTypes.string,
+  row: PropTypes.object
 };
 
 export default RegisterUserWizard;

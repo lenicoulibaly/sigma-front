@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Grid, TextField, Autocomplete, CircularProgress } from '@mui/material';
 import Modal from 'src/sigma/components/commons/Modal';
-import { useCreateDemandeAdhesion } from 'src/sigma/hooks/query/useDemandeAdhesion';
+import { useCreateDemandeAdhesion, useUpdateDemandeAdhesion } from 'src/sigma/hooks/query/useDemandeAdhesion';
 import { useOpenAssociationsList } from 'src/sigma/hooks/query/useAssociations';
 import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
 
-const DemandeAdhesionModal = ({ open, handleClose }) => {
+const DemandeAdhesionModal = ({ open, handleClose, mode = 'create', row = null }) => {
+    const isEdit = mode === 'edit';
     const [formData, setFormData] = useState({
         demandeurNom: '',
         demandeurPrenom: '',
@@ -15,9 +16,34 @@ const DemandeAdhesionModal = ({ open, handleClose }) => {
         associationNom: ''
     });
 
+    useEffect(() => {
+        if (open) {
+            if (isEdit && row) {
+                setFormData({
+                    demandeurNom: row.demandeurNom || '',
+                    demandeurPrenom: row.demandeurPrenom || '',
+                    demandeurEmail: row.demandeurEmail || '',
+                    demandeurTel: row.demandeurTel || '',
+                    assoId: row.assoId || null,
+                    associationNom: row.assoName || ''
+                });
+            } else {
+                setFormData({
+                    demandeurNom: '',
+                    demandeurPrenom: '',
+                    demandeurEmail: '',
+                    demandeurTel: '',
+                    assoId: null,
+                    associationNom: ''
+                });
+            }
+        }
+    }, [open, isEdit, row]);
+
     const [assoQuery, setAssoQuery] = useState('');
     const { data: associations = [], isLoading: loadingAssociations } = useOpenAssociationsList(assoQuery);
     const createMutation = useCreateDemandeAdhesion();
+    const updateMutation = useUpdateDemandeAdhesion();
 
     const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
 
@@ -41,21 +67,20 @@ const DemandeAdhesionModal = ({ open, handleClose }) => {
                 return;
             }
 
-            await createMutation.mutateAsync(formData);
-            setAlert({ open: true, message: 'Demande créée avec succès.', severity: 'success' });
+            if (isEdit) {
+                const id = row.demandeId || row.id;
+                await updateMutation.mutateAsync({ id, dto: formData });
+                setAlert({ open: true, message: 'Demande mise à jour avec succès.', severity: 'success' });
+            } else {
+                await createMutation.mutateAsync(formData);
+                setAlert({ open: true, message: 'Demande créée avec succès.', severity: 'success' });
+            }
+
             setTimeout(() => {
                 handleClose();
-                setFormData({
-                    demandeurNom: '',
-                    demandeurPrenom: '',
-                    demandeurEmail: '',
-                    demandeurTel: '',
-                    assoId: null,
-                    associationNom: ''
-                });
             }, 1000);
         } catch (error) {
-            setAlert({ open: true, message: 'Erreur lors de la création de la demande.', severity: 'error' });
+            setAlert({ open: true, message: `Erreur lors de la ${isEdit ? 'mise à jour' : 'création'} de la demande.`, severity: 'error' });
         }
     };
 
@@ -63,10 +88,10 @@ const DemandeAdhesionModal = ({ open, handleClose }) => {
         <>
             <Modal
                 open={open}
-                title="Nouvelle Demande d'Adhésion"
+                title={isEdit ? "Modifier la Demande d'Adhésion" : "Nouvelle Demande d'Adhésion"}
                 handleClose={handleClose}
                 handleConfirmation={handleSubmit}
-                actionLabel="Créer"
+                actionLabel={isEdit ? "Enregistrer" : "Créer"}
                 width="md"
             >
                 <Grid container spacing={2} sx={{ mt: 1 }}>

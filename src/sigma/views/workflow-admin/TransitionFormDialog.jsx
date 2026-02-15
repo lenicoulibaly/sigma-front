@@ -272,6 +272,7 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
       icon: savedTransition?.icon || '',
       workflowId: workflowId,
       active: savedTransition?.active ?? true,
+      visible: savedTransition?.visible ?? true,
       commentRequired: savedTransition?.commentRequired ?? false,
       requiredDocTypeCodes: savedTransition?.requiredDocTypeCodes || [],
     },
@@ -577,17 +578,23 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
             />
           </Grid>
 
-          {/* Commentaire requis + Actif sur la même ligne */}
+          {/* Commentaire requis + Visible + Actif */}
           <Grid item xs={12}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <FormControlLabel
                 control={<Switch size="small" checked={!!formik.values.commentRequired} onChange={(e) => formik.setFieldValue('commentRequired', e.target.checked)} />}
                 label="Commentaire requis"
               />
-              <FormControlLabel
-                control={<Switch size="small" checked={!!formik.values.active} onChange={(e) => formik.setFieldValue('active', e.target.checked)} />}
-                label="Actif"
-              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <FormControlLabel
+                  control={<Switch size="small" checked={!!formik.values.visible} onChange={(e) => formik.setFieldValue('visible', e.target.checked)} />}
+                  label="Visible"
+                />
+                <FormControlLabel
+                  control={<Switch size="small" checked={!!formik.values.active} onChange={(e) => formik.setFieldValue('active', e.target.checked)} />}
+                  label="Actif"
+                />
+              </Box>
             </Box>
           </Grid>
         </Grid>
@@ -732,10 +739,16 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
                   sx={{ width: 80, '& .MuiOutlinedInput-root': { height: 40 } }} 
                 />
                 <Autocomplete
-                  options={[{ value: 'RUN_BEAN_METHOD', label: 'Exécuter une méthode de bean' }]}
+                  options={[
+                    { value: 'RUN_BEAN_METHOD', label: 'Exécuter une méthode de bean' },
+                    { value: 'SEND_EMAIL', label: 'Envoyer un email' }
+                  ]}
                   getOptionLabel={(opt) => opt?.label || ''}
                   isOptionEqualToValue={(opt, val) => (typeof val === 'string' ? opt.value === val : opt.value === val?.value)}
-                  value={[{ value: 'RUN_BEAN_METHOD', label: 'Exécuter une méthode de bean' }].find(o => o.value === sideEffectForm.actionType) || null}
+                  value={[
+                    { value: 'RUN_BEAN_METHOD', label: 'Exécuter une méthode de bean' },
+                    { value: 'SEND_EMAIL', label: 'Envoyer un email' }
+                  ].find(o => o.value === sideEffectForm.actionType) || null}
                   onChange={(event, newValue) => {
                     const actionType = newValue?.value || '';
                     let actionConfig = sideEffectForm.actionConfig;
@@ -744,6 +757,13 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
                         beanName: "",
                         method: "",
                         args: ["${}"]
+                      }, null, 2);
+                    } else if (actionType === 'SEND_EMAIL' && (!actionConfig || actionConfig === '{\n  \n}')) {
+                      actionConfig = JSON.stringify({
+                        "to": "${#facts['nomDuChampDuFactPortantLeMailDuDestinataire']}",
+                        "subject": "",
+                        "templatePath": "templates/emails/demande-adhesion-approuvee.html",
+                        "nomDestinataire": "${#facts['nomDuChampDuFactPortantLeNomDuDestinataire']}"
                       }, null, 2);
                     }
                     setSideEffectForm({ ...sideEffectForm, actionType, actionConfig });

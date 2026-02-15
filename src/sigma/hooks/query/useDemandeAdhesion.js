@@ -49,6 +49,7 @@ export const buildAdhesionFormData = (data = {}) => {
     data.documents.forEach((doc, idx) => {
       const base = `documents[${idx}]`;
       if (doc?.objectId !== undefined && doc?.objectId !== null && doc?.objectId !== '') fd.append(`${base}.objectId`, String(doc.objectId));
+      if (doc?.docId !== undefined && doc?.docId !== null && doc?.docId !== '') fd.append(`${base}.docId`, String(doc.docId));
       if (doc?.docTypeCode) fd.append(`${base}.docTypeCode`, doc.docTypeCode);
       if (doc?.docNum) fd.append(`${base}.docNum`, doc.docNum);
       if (doc?.docName) fd.append(`${base}.docName`, doc.docName);
@@ -67,6 +68,7 @@ const DEMANDE_ADHESION_KEYS = {
   lists: (assoId) => assoId ? [...DEMANDE_ADHESION_KEYS.all, 'list', assoId] : [...DEMANDE_ADHESION_KEYS.all, 'list'],
   list: (assoId, params) => [...DEMANDE_ADHESION_KEYS.lists(assoId), { ...params }],
   userList: (params) => [...DEMANDE_ADHESION_KEYS.all, 'user-list', { ...params }],
+  detail: (id) => [...DEMANDE_ADHESION_KEYS.all, 'detail', id],
 };
 
 /**
@@ -107,7 +109,10 @@ export const useUpdateDemandeAdhesion = (assoId) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, dto }) => demandeAdhesionApi.update(id, dto),
+    mutationFn: ({ id, dto }) => {
+      const payload = dto instanceof FormData ? dto : buildAdhesionFormData(dto);
+      return demandeAdhesionApi.update(id, payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: DEMANDE_ADHESION_KEYS.all });
     },
@@ -139,12 +144,24 @@ export const useSearchUserDemandesAdhesion = (params = {}) => {
   });
 };
 
+/**
+ * Hook for getting a specific demande d'adhésion by ID
+ */
+export const useDemandeAdhesionById = (id) => {
+  return useQuery({
+    queryKey: DEMANDE_ADHESION_KEYS.detail(id),
+    queryFn: () => demandeAdhesionApi.findById(id),
+    enabled: !!id,
+  });
+};
+
 const useDemandeAdhesion = () => ({
   useCreateDemandeAdhesion,
   useCreateUserAndDemandeAdhesion,
   useUpdateDemandeAdhesion,
   useSearchDemandeAdhesion,
   useSearchUserDemandesAdhesion,
+  useDemandeAdhesionById,
 });
 
 export default useDemandeAdhesion;

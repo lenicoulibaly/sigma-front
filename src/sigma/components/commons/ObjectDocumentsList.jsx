@@ -118,8 +118,9 @@ const ObjectDocumentsList = ({ tableName, objectId }) => {
               </Stack>
           )
       },
-      { header: 'Nom', field: 'docName' },
+
       { header: 'Type', render: (row) => row.docTypeName || '-' },
+      { header: 'Description', field: 'docDescription' },
       {
           header: 'Actions',
           render: (row) => {
@@ -127,20 +128,12 @@ const ObjectDocumentsList = ({ tableName, objectId }) => {
               return (
                   <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
                       <Tooltip title="Prévisualiser">
-                          <IconButton 
-                              size="small" 
-                              onClick={() => handlePreview(row)} 
-                              disabled={isDownloading}
-                          >
+                          <IconButton size="small" onClick={() => handlePreview(row)} disabled={isDownloading}>
                               {isDownloading ? <CircularProgress size={20} /> : <VisibilityIcon fontSize="small" />}
                           </IconButton>
                       </Tooltip>
                       <Tooltip title="Télécharger">
-                          <IconButton 
-                              size="small" 
-                              onClick={() => handleDownload(row)} 
-                              disabled={isDownloading}
-                          >
+                          <IconButton size="small" onClick={() => handleDownload(row)} disabled={isDownloading}>
                               {isDownloading ? <CircularProgress size={20} /> : <DownloadIcon fontSize="small" />}
                           </IconButton>
                       </Tooltip>

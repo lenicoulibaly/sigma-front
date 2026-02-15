@@ -54,8 +54,7 @@ import {
   getGeneralInfo as apiGetGeneralInfo,
 } from '../../api/workflowApi';
 
-// Query keys
-const WORKFLOW_KEYS = {
+export const WORKFLOW_KEYS = {
   all: ['workflows'],
   lists: () => [...WORKFLOW_KEYS.all, 'list'],
   list: () => [...WORKFLOW_KEYS.lists()],
@@ -65,38 +64,38 @@ const WORKFLOW_KEYS = {
   objectTypes: () => [...WORKFLOW_KEYS.all, 'object-types'],
 };
 
-const TRANSITION_KEYS = {
+export const TRANSITION_KEYS = {
   all: ['transitions'],
   byWorkflow: (workflowId) => [...TRANSITION_KEYS.all, 'byWorkflow', Number(workflowId) || 0],
   search: (params) => [...TRANSITION_KEYS.all, 'search', { ...params }],
   detail: (id) => [...TRANSITION_KEYS.all, 'detail', id],
 };
 
-const RULE_KEYS = {
+export const RULE_KEYS = {
   all: ['transitionRules'],
   byTransition: (transitionId) => [...RULE_KEYS.all, 'byTransition', transitionId],
   detail: (id) => [...RULE_KEYS.all, 'detail', id],
 };
 
-const VALIDATION_CFG_KEYS = {
+export const VALIDATION_CFG_KEYS = {
   all: ['transitionValidationConfig'],
   detail: (transitionId) => [...VALIDATION_CFG_KEYS.all, 'detail', transitionId],
 };
 
-const SIDE_EFFECT_KEYS = {
+export const SIDE_EFFECT_KEYS = {
   all: ['transitionSideEffects'],
   byTransition: (transitionId) => [...SIDE_EFFECT_KEYS.all, 'byTransition', transitionId],
   detail: (id) => [...SIDE_EFFECT_KEYS.all, 'detail', id],
   search: (params) => [...SIDE_EFFECT_KEYS.all, 'search', { ...params }],
 };
 
-const STATUS_KEYS = {
+export const STATUS_KEYS = {
   all: ['workflowStatuses'],
   byWorkflow: (workflowId) => [...STATUS_KEYS.all, 'byWorkflow', Number(workflowId) || 0],
   search: (params) => [...STATUS_KEYS.all, 'search', { ...params }],
 };
 
-const STATUS_GROUP_KEYS = {
+export const STATUS_GROUP_KEYS = {
   all: ['workflowStatusGroups'],
   details: () => [...STATUS_GROUP_KEYS.all, 'detail'],
   detail: (id) => [...STATUS_GROUP_KEYS.details(), id],
@@ -112,7 +111,7 @@ const STATUS_GROUP_KEYS = {
   isVisible: (groupCode, statusCode) => [...STATUS_GROUP_KEYS.all, 'is-visible', groupCode, statusCode]
 };
 
-const EXECUTION_KEYS = {
+export const EXECUTION_KEYS = {
   all: ['workflowExecution'],
   availableTransitions: (workflowCode, objectType, objectId) => [...EXECUTION_KEYS.all, 'availableTransitions', workflowCode, objectType, objectId],
   history: (objectType, objectId, params) => [...EXECUTION_KEYS.all, 'history', objectType, objectId, params],
@@ -180,11 +179,7 @@ export const useCreateTransition = () => {
   return useMutation({
     mutationFn: (payload) => apiCreateTransition(payload),
     onSuccess: (data) => {
-      if (data?.workflowId) {
-        queryClient.invalidateQueries({ queryKey: TRANSITION_KEYS.byWorkflow(data.workflowId) });
-      } else {
-        queryClient.invalidateQueries({ queryKey: TRANSITION_KEYS.all });
-      }
+      queryClient.invalidateQueries({ queryKey: TRANSITION_KEYS.all });
     },
   });
 };
@@ -194,8 +189,7 @@ export const useUpdateTransition = () => {
   return useMutation({
     mutationFn: ({ id, payload }) => apiUpdateTransition(id, payload),
     onSuccess: (data) => {
-      const wfId = data?.workflowId;
-      if (wfId) queryClient.invalidateQueries({ queryKey: TRANSITION_KEYS.byWorkflow(wfId) });
+      queryClient.invalidateQueries({ queryKey: TRANSITION_KEYS.all });
     },
   });
 };

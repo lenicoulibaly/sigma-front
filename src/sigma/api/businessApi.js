@@ -61,7 +61,8 @@ export const demandeAdhesionApi = {
         return response.data;
     },
     update: async (id, dto) => {
-        const response = await apiClient.put(`/demandes-adhesion/${id}`, dto);
+        const headers = dto instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {};
+        const response = await apiClient.put(`/demandes-adhesion/${id}`, dto, { headers });
         return response.data;
     },
     search: async (assoId, params = {}) => {
@@ -76,6 +77,10 @@ export const demandeAdhesionApi = {
     createUserAndDemandeAdhesion: async (dto) => {
         const headers = dto instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : {};
         const response = await apiClient.post('/demandes-adhesion/open/user-demande', dto, { headers });
+        return response.data;
+    },
+    findById: async (id) => {
+        const response = await apiClient.get(`/demandes-adhesion/${id}`);
         return response.data;
     },
 };

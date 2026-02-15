@@ -53,6 +53,15 @@ export default function TransitionsTab({
             header: 'Icône',
             width: 80,
             render: (row) => (row?.icon ? <IconByName name={row.icon} fontSize="small" htmlColor={row?.color} sx={{ color: row?.color }} /> : null)
+          },
+          {
+            header: 'Visible',
+            width: 80,
+            render: (row) => (
+              <Typography variant="body2" color={row?.visible ? 'success.main' : 'text.disabled'}>
+                {row?.visible ? 'Oui' : 'Non'}
+              </Typography>
+            )
           }
         ]}
         rows={controller.rows}

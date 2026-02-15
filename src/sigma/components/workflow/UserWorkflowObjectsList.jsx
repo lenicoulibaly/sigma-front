@@ -44,14 +44,28 @@ const UserWorkflowObjectsList = ({
         {
             header: 'Actions',
             render: (row) => {
-                const id = row.demandeId;
+                const id = row.demandeId || row.id;
+                
+                // Gestion de l'action de modification (onEdit)
+                let effectiveOnEdit = undefined;
+                if (onEdit) {
+                    const result = onEdit(row, user);
+                    // Si le résultat est un booléen true, cela signifie que l'action est autorisée
+                    if (result === true) {
+                        effectiveOnEdit = () => onEdit(row);
+                    } else if (typeof result === 'function') {
+                        // Si le résultat est déjà une fonction, on l'utilise
+                        effectiveOnEdit = result;
+                    }
+                }
+
                 return (
                     <UnifiedActionDropdown
                         workflowCode={workflowCode}
                         objectType={objectType}
                         objectId={id ? String(id) : ''}
                         onView={() => onView?.(row)}
-                        onEdit={onEdit ? () => onEdit(row) : undefined}
+                        onEdit={effectiveOnEdit}
                         onTransitionApplied={handleTransitionApplied}
                     />
                 );
@@ -101,7 +115,8 @@ const UserWorkflowObjectsList = ({
                         assoIds: filters?.assoIds,
                         workflowStatusGroupCodes: filters?.statusGroupCodes,
                         // Note: On peut conserver assoId (singulier) pour la compatibilité avec certains hooks
-                        assoId: (filters?.assoIds?.length > 0) ? filters.assoIds[0] : user?.assoId
+                        // On ne force plus assoId à user?.assoId s'il n'y a pas de filtre, pour permettre de voir toutes ses demandes
+                        assoId: (filters?.assoIds?.length > 0) ? filters.assoIds[0] : undefined
                     };
                     // Permet une personnalisation supplémentaire via la prop paramMapper
                     return paramMapper ? paramMapper(baseParams, user, filters) : baseParams;

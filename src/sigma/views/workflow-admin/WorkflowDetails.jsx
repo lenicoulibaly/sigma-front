@@ -19,7 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import MainCard from 'ui-component/cards/MainCard';
 import { gridSpacing } from 'store/constant';
-import { useWorkflow, useUpdateWorkflow, useCreateTransition, useUpdateTransition, useDeleteTransition, useSearchWorkflowStatuses, useSearchTransitionsByWorkflow, useSearchWorkflowStatusGroups, useCreateWorkflowStatusGroup, useUpdateWorkflowStatusGroup, useDeleteWorkflowStatusGroup, TRANSITION_QUERY_KEYS, WORKFLOW_STATUS_QUERY_KEYS } from 'sigma/hooks/query/useWorkflow';
+import { useWorkflow, useUpdateWorkflow, useCreateTransition, useUpdateTransition, useDeleteTransition, useSearchWorkflowStatuses, useSearchTransitionsByWorkflow, useSearchWorkflowStatusGroups, useCreateWorkflowStatusGroup, useUpdateWorkflowStatusGroup, useDeleteWorkflowStatusGroup, TRANSITION_QUERY_KEYS, WORKFLOW_STATUS_QUERY_KEYS, WORKFLOW_STATUS_GROUP_QUERY_KEYS } from 'sigma/hooks/query/useWorkflow';
 import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
 import { useGenericListController } from 'src/sigma/components/commons/GenericSearchablePaginatedList';
 import DetailsTab from './tabs/DetailsTab';
@@ -151,6 +151,7 @@ export default function WorkflowDetails() {
       await updateWorkflowMut({ id: workflow.id, payload });
       await refetchWf();
       queryClient.invalidateQueries({ queryKey: WORKFLOW_STATUS_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TRANSITION_QUERY_KEYS.all });
       setAlertMessage('Étape supprimée avec succès');
       setAlertSeverity('success');
       setAlertOpen(true);
@@ -200,6 +201,7 @@ export default function WorkflowDetails() {
       await refetchWf();
       // Invalidate statuses search caches so the list refreshes
       queryClient.invalidateQueries({ queryKey: WORKFLOW_STATUS_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TRANSITION_QUERY_KEYS.all });
       setAlertMessage(isEdit ? 'Étape mise à jour avec succès' : 'Étape ajoutée avec succès');
       setAlertSeverity('success');
       setAlertOpen(true);
@@ -284,6 +286,8 @@ export default function WorkflowDetails() {
       setAlertMessage('Groupe supprimé avec succès');
       setAlertSeverity('success');
       setAlertOpen(true);
+      queryClient.invalidateQueries({ queryKey: WORKFLOW_STATUS_GROUP_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TRANSITION_QUERY_KEYS.all });
     } catch (e) {
       const msg = e?.response?.data || e?.message || "Erreur lors de la suppression du groupe";
       setAlertMessage(msg);
@@ -305,6 +309,8 @@ export default function WorkflowDetails() {
       setAlertOpen(true);
       setGroupDialogOpen(false);
       setEditingGroup(null);
+      queryClient.invalidateQueries({ queryKey: WORKFLOW_STATUS_GROUP_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TRANSITION_QUERY_KEYS.all });
     } catch (e) {
       const msg = e?.response?.data || e?.message || "Erreur lors de l'enregistrement du groupe";
       setAlertMessage(msg);

@@ -111,24 +111,26 @@ const UnifiedActionDropdown = ({
             <ListItemText>Chargement des transitions...</ListItemText>
           </MenuItem>
         ) : (
-          transitions.map((t, index) => {
-            const tId = t.transitionId || t.id || index;
-            const label = t.libelle || t.label || 'Action';
-            return (
-              <MenuItem key={tId} onClick={() => handleTransitionClick(t)}>
-                <ListItemIcon>
-                  <IconByName 
-                    name={t.icon} 
-                    fontSize="small" 
-                    sx={{ color: t.color || 'primary.main' }} 
-                  />
-                </ListItemIcon>
-                <ListItemText sx={{ color: t.color || 'primary.main' }}>
-                  {formatLabel(label)}
-                </ListItemText>
-              </MenuItem>
-            );
-          })
+          transitions
+            .filter((t) => t.visible !== false)
+            .map((t, index) => {
+              const tId = t.transitionId || t.id || index;
+              const label = t.libelle || t.label || 'Action';
+              return (
+                <MenuItem key={tId} onClick={() => handleTransitionClick(t)}>
+                  <ListItemIcon>
+                    <IconByName 
+                      name={t.icon} 
+                      fontSize="small" 
+                      sx={{ color: t.color || 'primary.main' }} 
+                    />
+                  </ListItemIcon>
+                  <ListItemText sx={{ color: t.color || 'primary.main' }}>
+                    {formatLabel(label)}
+                  </ListItemText>
+                </MenuItem>
+              );
+            })
         )}
       </Menu>
 

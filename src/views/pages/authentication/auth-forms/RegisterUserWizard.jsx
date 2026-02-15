@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 
 // mui
@@ -38,7 +38,8 @@ import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
 import { useVisibleStructures } from 'src/sigma/hooks/query/useStructures';
 import { useTypesByGroupCode, useDirectSousTypes } from 'src/sigma/hooks/query/useTypes';
 import { useSearchAssociations } from 'src/sigma/hooks/query/useAssociations';
-import { useCreateUser } from 'src/sigma/hooks/query/useUsers';
+import { useCreateUser, useUpdateUser } from 'src/sigma/hooks/query/useUsers';
+import { useUpdateDemandeAdhesion } from 'src/sigma/hooks/query/useDemandeAdhesion';
 
 // Styled frames (same spirit as AssociationModal & RegisterUserModal)
 const LabeledFrame = styled(Box)(({ theme }) => ({
@@ -81,10 +82,11 @@ const emptyDocumentRow = () => ({
 
 // ==============================|| REGISTER USER WIZARD (2 STEPS) ||============================== //
 
-const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', defaultObjectTableName = 'users', onRegistered }) => {
+const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', defaultObjectTableName = 'users', onRegistered, mode = 'create', row = null }) => {
+  const isEdit = mode === 'edit';
   // Stepper
   const steps = ['Infos personnelles & professionnelles', 'Association & pièces jointes'];
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeStep, setActiveStep] = useState(isEdit ? 1 : 0);
 
   // Alerts
   const [alert, setAlert] = useState({ open: false, severity: 'success', message: '' });
@@ -120,6 +122,35 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
   });
 
   const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const updateDemande = useUpdateDemandeAdhesion();
+
+  useEffect(() => {
+    if (open && isEdit && row) {
+      setValues({
+        email: row.demandeurEmail || row.email || '',
+        matricule: row.matricule || '',
+        gradeCode: row.gradeCode || '',
+        firstName: row.demandeurPrenom || row.firstName || '',
+        lastName: row.demandeurNom || row.lastName || '',
+        tel: row.demandeurTel || row.tel || '',
+        strId: row.strId || null,
+        adresse: row.adresse || '',
+        lieuNaissance: row.lieuNaissance || '',
+        dateNaissance: row.dateNaissance ? new Date(row.dateNaissance) : null,
+        emploiCode: row.emploiCode || '',
+        emploiName: row.emploiName || '',
+        datePremierePriseService: row.datePremierePriseService ? new Date(row.datePremierePriseService) : null,
+        assoId: row.assoId || null,
+        documents: row.documents && row.documents.length > 0 
+          ? row.documents.map(d => ({ ...d, id: d.id || Math.random().toString(36).slice(2) }))
+          : [emptyDocumentRow()]
+      });
+      setActiveStep(1);
+    } else if (open && !isEdit) {
+      reset();
+    }
+  }, [open, isEdit, row]);
 
   const setField = (name, value) => setValues((prev) => ({ ...prev, [name]: value }));
 
@@ -131,7 +162,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     return e;
   }, [values.firstName, values.lastName, values.tel]);
 
-  const canContinueStep1 = useMemo(() => Object.keys(requiredErrors).length === 0, [requiredErrors]);
+  const canContinueStep1 = useMemo(() => isEdit || Object.keys(requiredErrors).length === 0, [isEdit, requiredErrors]);
 
   const handleNext = () => setActiveStep((s) => Math.min(s + 1, steps.length - 1));
   const handleBack = () => setActiveStep((s) => Math.max(s - 1, 0));
@@ -142,11 +173,10 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
       email: '', matricule: '', gradeCode: '', firstName: '', lastName: '', tel: '', strId: null, adresse: '', lieuNaissance: '', dateNaissance: null,
       emploiCode: '', emploiName: '', datePremierePriseService: null, assoId: null, documents: [emptyDocumentRow()]
     }));
-    setActiveStep(0);
+    setActiveStep(isEdit ? 1 : 0);
   };
 
   const showAlert = (message, severity = 'success') => setAlert({ open: true, severity, message });
-
   const onCloseAlert = () => setAlert((a) => ({ ...a, open: false }));
 
   const handleSubmit = async () => {
@@ -180,8 +210,21 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     };
 
     try {
-      await createUser.mutateAsync(payload);
-      showAlert("Utilisateur créé avec succès", 'success');
+      if (isEdit) {
+        const id = row.demandeId || row.id;
+        await updateDemande.mutateAsync({ id, dto: {
+          ...payload,
+          demandeurNom: values.lastName,
+          demandeurPrenom: values.firstName,
+          demandeurEmail: values.email,
+          demandeurTel: values.tel,
+          assoId: values.assoId
+        }});
+        showAlert("Demande mise à jour avec succès", 'success');
+      } else {
+        await createUser.mutateAsync(payload);
+        showAlert("Utilisateur créé avec succès", 'success');
+      }
       if (typeof onRegistered === 'function') onRegistered();
       reset();
       handleClose?.();
@@ -211,27 +254,27 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
         </FrameLabel>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
-            <TextField size="small" fullWidth label="Nom" value={values.lastName} onChange={(e) => setField('lastName', e.target.value)} error={!!requiredErrors.lastName} helperText={requiredErrors.lastName || ''} />
+            <TextField size="small" fullWidth label="Nom" value={values.lastName} onChange={(e) => setField('lastName', e.target.value)} error={!!requiredErrors.lastName} helperText={requiredErrors.lastName || ''} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField size="small" fullWidth label="Prénom" value={values.firstName} onChange={(e) => setField('firstName', e.target.value)} error={!!requiredErrors.firstName} helperText={requiredErrors.firstName || ''} />
+            <TextField size="small" fullWidth label="Prénom" value={values.firstName} onChange={(e) => setField('firstName', e.target.value)} error={!!requiredErrors.firstName} helperText={requiredErrors.firstName || ''} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={6}>
             <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
-              <DatePicker label="Date de naissance" value={values.dateNaissance} onChange={(d) => setField('dateNaissance', d)} slotProps={{ textField: { fullWidth: true, size: 'small' } }} />
+              <DatePicker label="Date de naissance" value={values.dateNaissance} onChange={(d) => setField('dateNaissance', d)} slotProps={{ textField: { fullWidth: true, size: 'small', inputProps: { readOnly: isEdit } } }} readOnly={isEdit} />
             </LocalizationProvider>
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField size="small" fullWidth label="Lieu de naissance" value={values.lieuNaissance} onChange={(e) => setField('lieuNaissance', e.target.value)} />
+            <TextField size="small" fullWidth label="Lieu de naissance" value={values.lieuNaissance} onChange={(e) => setField('lieuNaissance', e.target.value)} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField size="small" fullWidth label="Téléphone" value={values.tel} onChange={(e) => setField('tel', e.target.value)} error={!!requiredErrors.tel} helperText={requiredErrors.tel || ''} />
+            <TextField size="small" fullWidth label="Téléphone" value={values.tel} onChange={(e) => setField('tel', e.target.value)} error={!!requiredErrors.tel} helperText={requiredErrors.tel || ''} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField size="small" fullWidth label="Email" value={values.email} onChange={(e) => setField('email', e.target.value)} />
+            <TextField size="small" fullWidth label="Email" value={values.email} onChange={(e) => setField('email', e.target.value)} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField size="small" fullWidth label="Adresse" value={values.adresse} onChange={(e) => setField('adresse', e.target.value)} />
+            <TextField size="small" fullWidth label="Adresse" value={values.adresse} onChange={(e) => setField('adresse', e.target.value)} inputProps={{ readOnly: isEdit }} />
           </Grid>
         </Grid>
       </LabeledFrame>
@@ -244,7 +287,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
         </FrameLabel>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={4}>
-            <TextField size="small" fullWidth label="Matricule" value={values.matricule} onChange={(e) => setField('matricule', e.target.value)} />
+            <TextField size="small" fullWidth label="Matricule" value={values.matricule} onChange={(e) => setField('matricule', e.target.value)} inputProps={{ readOnly: isEdit }} />
           </Grid>
           <Grid item xs={12} sm={4}>
             <Autocomplete
@@ -255,6 +298,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               value={gradeOptions.find((o) => o.code === values.gradeCode) || null}
               onChange={(_e, opt) => setField('gradeCode', opt?.code || '')}
               renderInput={(params) => <TextField {...params} label="Grade" />}
+              readOnly={isEdit}
             />
           </Grid>
           <Grid item xs={12} sm={4}>
@@ -265,6 +309,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               value={emploiOptions.find((o) => o.id === values.emploiCode) || null}
               onChange={(_e, opt) => setField('emploiCode', opt?.id || '')}
               renderInput={(params) => <TextField {...params} label="Emploi" />}
+              readOnly={isEdit}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -275,11 +320,12 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
               value={structureOptions.find((o) => o.id === values.strId) || null}
               onChange={(_e, opt) => setField('strId', opt?.id ?? null)}
               renderInput={(params) => <TextField {...params} label="Structure" />}
+              readOnly={isEdit}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
-              <DatePicker label="Date de 1ère prise de service" value={values.datePremierePriseService} onChange={(d) => setField('datePremierePriseService', d)} slotProps={{ textField: { fullWidth: true, size: 'small' } }} />
+              <DatePicker label="Date de 1ère prise de service" value={values.datePremierePriseService} onChange={(d) => setField('datePremierePriseService', d)} slotProps={{ textField: { fullWidth: true, size: 'small', inputProps: { readOnly: isEdit } } }} readOnly={isEdit} />
             </LocalizationProvider>
           </Grid>
         </Grid>
@@ -320,6 +366,7 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                   InputProps={{ ...params.InputProps, endAdornment: (<>{params.InputProps.endAdornment}</>) }}
                 />
               )}
+              readOnly={isEdit}
             />
           </Grid>
         </Grid>
@@ -395,14 +442,32 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     <>
       <Modal
         open={!!open}
-        title={'Inscription utilisateur'}
-        maxWidth="md"
+        title={isEdit ? "Modifier la demande d'adhésion" : 'Inscription utilisateur'}
+        width="md"
         handleClose={handleClose}
         handleConfirmation={activeStep === steps.length - 1 ? handleSubmit : handleNext}
-        actionLabel={activeStep === steps.length - 1 ? (createUser.isLoading ? 'Enregistrement…' : "Terminer") : 'Suivant'}
-        secondaryActionLabel={activeStep > 0 ? 'Précédent' : undefined}
-        handleSecondaryAction={activeStep > 0 ? handleBack : undefined}
-        disableConfirm={activeStep === 0 && !canContinueStep1}
+        actionLabel={activeStep === steps.length - 1 ? ((isEdit ? updateDemande.isLoading : createUser.isLoading) ? 'Enregistrement…' : "Terminer") : 'Suivant'}
+        actions={
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', py: 1, px: 1 }}>
+            <Button
+              variant="outlined"
+              onClick={handleBack}
+              disabled={activeStep === 0}
+              sx={{ visibility: activeStep === 0 ? 'hidden' : 'visible' }}
+            >
+              Précédent
+            </Button>
+            <Box>
+              <Button
+                variant="contained"
+                onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
+                disabled={activeStep === 0 && !canContinueStep1}
+              >
+                {activeStep === steps.length - 1 ? ((isEdit ? updateDemande.isLoading : createUser.isLoading) ? 'Enregistrement…' : "Terminer") : 'Suivant'}
+              </Button>
+            </Box>
+          </Box>
+        }
       >
         <Box>
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 2 }}>
@@ -429,7 +494,9 @@ RegisterUserWizard.propTypes = {
   handleClose: PropTypes.func,
   docParentCode: PropTypes.string,
   defaultObjectTableName: PropTypes.string,
-  onRegistered: PropTypes.func
+  onRegistered: PropTypes.func,
+  mode: PropTypes.string,
+  row: PropTypes.object
 };
 
 export default RegisterUserWizard;
