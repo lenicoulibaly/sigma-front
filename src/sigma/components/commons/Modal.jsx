@@ -53,7 +53,8 @@ export const StyledCloseButton = styled(IconButton)(({ theme, bgcolor }) => ({
 const Modal = ({ open, printVisible=false, newVisible=false,
                    title, handleClose, handleConfirmation, handlePrint, handleNew,
                    children, actionVisible =true, actionDisabled, actionLabel, width,
-                   titleBgColor, printButtonColor, zIndex = 1300, headerContent, actions}) => {
+                   titleBgColor, printButtonColor, zIndex = 1300, headerContent, actions,
+                   triggerIcon, startIcon}) => {
     return (
         <StyledDialog aria-labelledby="customized-dialog-title" open={open} maxWidth={width || 'sm'} fullWidth bgcolor={titleBgColor}>
             <StyledDialogTitle bgcolor={titleBgColor}>
@@ -107,7 +108,8 @@ const Modal = ({ open, printVisible=false, newVisible=false,
                                 actionDisabled={actionDisabled}
                                 openLabel={actionLabel || 'Enregistrer'}
                                 handleConfirmation={handleConfirmation}
-                                TriggerIcon={<SaveIcon sx={{ fontSize: '2rem' }} />}
+                                TriggerIcon={triggerIcon === undefined ? <SaveIcon sx={{ fontSize: '2rem' }} /> : triggerIcon}
+                                startIcon={startIcon}
                                 triggerSize="small"
                                 triggerStyle={{ p: 0.5 }}
                             />
@@ -134,6 +136,8 @@ Modal.propTypes = {
     handlePrint: PropTypes.func,
     headerContent: PropTypes.node, // Custom content to display in the header
     actions: PropTypes.node, // Custom actions content to render inside DialogActions
+    triggerIcon: PropTypes.node,
+    startIcon: PropTypes.node,
 };
 
 export default Modal;

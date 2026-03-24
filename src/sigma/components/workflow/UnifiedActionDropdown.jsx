@@ -18,7 +18,7 @@ import {
 import IconByName from 'src/sigma/components/commons/IconByName';
 import { useAvailableTransitions } from 'src/sigma/hooks/query/useWorkflow';
 import { formatLabel } from 'src/sigma/utilities/formatUtils';
-import TransitionExecutionModal from './TransitionExecutionModal';
+import { getTransitionComponent } from './TransitionExecCompRegistry';
 import useAuth from 'src/sigma/hooks/useAuth';
 
 /**
@@ -135,17 +135,17 @@ const UnifiedActionDropdown = ({
       </Menu>
 
       {selectedTransition && (
-        <TransitionExecutionModal
-          open={modalOpen}
-          handleClose={() => setModalOpen(false)}
-          workflowCode={workflowCode}
-          objectType={objectType}
-          objectId={objectId}
-          transition={selectedTransition}
-          onSuccess={onTransitionApplied}
-          assoId={assoId}
-          sectionId={sectionId}
-        />
+        React.createElement(getTransitionComponent(selectedTransition.transitionExecComponentCode), {
+          open: modalOpen,
+          handleClose: () => setModalOpen(false),
+          workflowCode: workflowCode,
+          objectType: objectType,
+          objectId: objectId,
+          transition: selectedTransition,
+          onSuccess: onTransitionApplied,
+          assoId: assoId,
+          sectionId: sectionId
+        })
       )}
     </>
   );

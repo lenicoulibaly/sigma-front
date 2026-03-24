@@ -41,7 +41,8 @@ export default function CustomAlertDialog({
     handleConfirmation,
     TriggerIcon,
     triggerStyle,
-    triggerSize = 'large'
+    triggerSize = 'large',
+    startIcon
 }) {
     const theme = useTheme();
     const [internalOpen, setInternalOpen] = React.useState(false);
@@ -79,28 +80,30 @@ export default function CustomAlertDialog({
         <>
             {/* Only render trigger if using legacy API and actionVisible is true */}
             {!isExternalControl && actionVisible && (
-                TriggerIcon ? 
-                    <IconButton 
-                        color="secondary" 
-                        sx={triggerStyle} 
-                        size={triggerSize} 
-                        disabled={actionDisabled} 
-                        variant={variant} 
-                        onClick={handleClickOpen}
-                    >
-                        <Tooltip placement="top" title={openLabel}>
+                <Tooltip placement="top" title={openLabel}>
+                    {TriggerIcon ? 
+                        <IconButton 
+                            color="secondary" 
+                            sx={triggerStyle} 
+                            size={triggerSize} 
+                            disabled={actionDisabled} 
+                            variant={variant} 
+                            onClick={handleClickOpen}
+                        >
                             {TriggerIcon}
-                        </Tooltip>
-                    </IconButton> 
-                : 
-                    <Button 
-                        color="secondary" 
-                        disabled={actionDisabled} 
-                        variant={variant} 
-                        onClick={handleClickOpen}
-                    >
-                        {openLabel}
-                    </Button>
+                        </IconButton>
+                    : 
+                        <Button 
+                            color="secondary" 
+                            disabled={actionDisabled} 
+                            variant={variant} 
+                            onClick={handleClickOpen}
+                            startIcon={startIcon}
+                        >
+                            {openLabel}
+                        </Button>
+                    }
+                </Tooltip>
             )}
 
             <Dialog
@@ -177,6 +180,7 @@ CustomAlertDialog.propTypes = {
     cancelLabel: PropTypes.string,
     handleConfirmation: PropTypes.func,
     TriggerIcon: PropTypes.node,
+    startIcon: PropTypes.node,
     triggerStyle: PropTypes.object,
     triggerSize: PropTypes.string
 };

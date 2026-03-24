@@ -16,7 +16,7 @@ import ObjectDocumentsList from 'src/sigma/components/commons/ObjectDocumentsLis
 import GeneralInfoDisplay from './GeneralInfoDisplay';
 import StatusBadge from './StatusBadge';
 import { useAvailableTransitions } from 'src/sigma/hooks/query/useWorkflow';
-import TransitionExecutionModal from './TransitionExecutionModal';
+import { getTransitionComponent } from './TransitionExecCompRegistry';
 import UnifiedActionDropdown from './UnifiedActionDropdown';
 import useAuth from 'src/sigma/hooks/useAuth';
 
@@ -134,17 +134,17 @@ const WorkflowManager = ({
 
           {/* Modal d'exécution */}
           {selectedTransition && (
-              <TransitionExecutionModal
-                  open={modalOpen}
-                  handleClose={() => setModalOpen(false)}
-                  workflowCode={workflowCode}
-                  objectType={objectType}
-                  objectId={objectId}
-                  transition={selectedTransition}
-                  onSuccess={handleTransitionSuccess}
-                  assoId={assoId}
-                  sectionId={sectionId}
-              />
+              React.createElement(getTransitionComponent(selectedTransition.transitionExecComponentCode), {
+                  open: modalOpen,
+                  handleClose: () => setModalOpen(false),
+                  workflowCode: workflowCode,
+                  objectType: objectType,
+                  objectId: objectId,
+                  transition: selectedTransition,
+                  onSuccess: handleTransitionSuccess,
+                  assoId: assoId,
+                  sectionId: sectionId
+              })
           )}
       </Box>
   );

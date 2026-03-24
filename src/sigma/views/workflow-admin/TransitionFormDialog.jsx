@@ -260,6 +260,13 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
     }
   }, [privilegeOptions]);
 
+  // Types de composants d'exécution de transition depuis le groupe TRANS_EXEC_COMP
+  const { data: transExecTypesData = [] } = useTypesByGroupCode('TRANS_EXEC_COMP');
+  const transExecOptions = useMemo(
+    () => (Array.isArray(transExecTypesData) ? transExecTypesData.map((t) => ({ id: t.code, label: t.name })) : []),
+    [transExecTypesData]
+  );
+
   const formik = useFormik({
     enableReinitialize: true,
     initialValues: {
@@ -275,6 +282,7 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
       visible: savedTransition?.visible ?? true,
       commentRequired: savedTransition?.commentRequired ?? false,
       requiredDocTypeCodes: savedTransition?.requiredDocTypeCodes || [],
+      transitionExecComponentCode: savedTransition?.transitionExecComponentCode || '',
     },
     onSubmit: async (vals) => {
       if (!vals.privilegeCode) return;
@@ -579,6 +587,20 @@ export default function TransitionFormDialog({ open, onClose, initialValues, onS
           </Grid>
 
           {/* Commentaire requis + Visible + Actif */}
+          <Grid item xs={12} sm={6}>
+            <Autocomplete
+              options={transExecOptions}
+              value={transExecOptions.find((o) => o.id === formik.values.transitionExecComponentCode) || null}
+              onChange={(e, newValue) => formik.setFieldValue('transitionExecComponentCode', newValue?.id || '')}
+              getOptionLabel={(opt) => opt?.label || ''}
+              isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
+              renderInput={(params) => (
+                <TextField {...params} label="Composant d'exécution" placeholder="Défaut (Standard)" size="small" />
+              )}
+              fullWidth
+              size="small"
+            />
+          </Grid>
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
               <FormControlLabel
