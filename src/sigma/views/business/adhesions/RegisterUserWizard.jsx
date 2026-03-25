@@ -46,6 +46,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import Modal from 'src/sigma/components/commons/Modal';
 import FloatingAlert from 'src/sigma/components/commons/FloatingAlert';
 import CustomAlertDialog from 'src/sigma/components/commons/CustomAlertDialog';
+import GenericDocumentAttachmentManager from 'src/sigma/components/commons/GenericDocumentAttachmentManager';
 import { useOpenStructuresSearch } from 'src/sigma/hooks/query/useStructures';
 import { useTypesByGroupCode, useDirectSousTypes } from 'src/sigma/hooks/query/useTypes';
 import { useAssociationDetails, useOpenAssociationsList } from 'src/sigma/hooks/query/useAssociations';
@@ -141,52 +142,6 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
 
   const createWithDemande = useCreateUserAndDemandeAdhesion();
   const updateDemande = useUpdateDemandeAdhesion();
-  const downloadMutation = useDownloadDocument();
-
-  // Helper to check if a document is previewable
-  const isPreviewable = (mimeType) => {
-    return ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'].includes(mimeType);
-  };
-
-  const handleDownload = async (docId, filename) => {
-    try {
-      const { blob, filename: serverFilename } = await downloadMutation.mutateAsync(docId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename || serverFilename || 'document');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      setAlert({ open: true, message: "Erreur lors du téléchargement du document", severity: 'error' });
-    }
-  };
-
-  const blobToBase64 = (blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result || '';
-      const base64 = typeof result === 'string' ? result.split(',')[1] : '';
-      resolve(base64 || '');
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-
-  const handlePreview = async (doc) => {
-    try {
-      const { blob, mimeType, filename } = await downloadMutation.mutateAsync(doc.docId);
-      const base64 = await blobToBase64(blob);
-      setViewerBase64(base64);
-      setViewerMime(doc.docMimeType || mimeType || 'application/pdf');
-      setViewerTitle(doc.docName || filename || 'Aperçu du document');
-      setViewerOpen(true);
-    } catch (error) {
-      setAlert({ open: true, message: "Impossible de prévisualiser le document", severity: 'error' });
-    }
-  };
 
   // Latest association docs (charte & statuts/règlements)
   const { data: latestCharteDoc } = useLatestDocument({
@@ -544,20 +499,6 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
     </Box>
   );
 
-  const updateDocField = (id, field, val) => {
-    setValues((prev) => ({
-      ...prev,
-      documents: prev.documents.map((d) => (d.id === id ? { ...d, [field]: val } : d))
-    }));
-  };
-  const addDocRow = () => setValues((prev) => ({ ...prev, documents: [...prev.documents, emptyDocumentRow()] }));
-  const removeDocRow = (id) =>
-    setValues((prev) => {
-      const list = prev.documents || [];
-      if (list.length <= 1) return prev; // cannot remove last row
-      return { ...prev, documents: list.filter((d) => d.id !== id) };
-    });
-
   const renderStep2 = () => (
     <Box>
       <LabeledFrame>
@@ -587,6 +528,16 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
                   placeholder="Nom, sigle, ..."
                 />
               )}
+              readOnly={isEdit}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Matricule"
+              value={values.matricule || ''}
+              onChange={(e) => setField('matricule', e.target.value)}
               readOnly={isEdit}
             />
           </Grid>
@@ -667,102 +618,12 @@ const RegisterUserWizard = ({ open, handleClose, docParentCode = 'DOC_USER', def
 
       <LabeledFrame>
         <FrameLabel>Pièces jointes</FrameLabel>
-        <Grid container spacing={2}>
-          {(values.documents || []).map((row, idx) => (
-            <Grid key={row.id} item xs={12}>
-              <Grid container spacing={1} alignItems="center">
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth size="small" label="Fichier" placeholder="Choisir un fichier"
-                    value={row.file?.name || row.docName || ''} disabled
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Stack direction="row" spacing={0.5}>
-                            {row.docId && (
-                              <>
-                                {isPreviewable(row.docMimeType) && (
-                                  <Tooltip title="Prévisualiser">
-                                    <IconButton size="small" color="primary" onClick={() => handlePreview(row)}>
-                                      <VisibilityIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                )}
-                                <Tooltip title="Télécharger">
-                                  <IconButton size="small" color="secondary" onClick={() => handleDownload(row.docId, row.docName)}>
-                                    <DownloadIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              </>
-                            )}
-                            {row.file && isPreviewable(row.file.type) && (
-                              <Tooltip title="Prévisualiser le nouveau fichier">
-                                <IconButton
-                                  size="small"
-                                  color="primary"
-                                  onClick={async () => {
-                                    try {
-                                      const base64 = await blobToBase64(row.file);
-                                      const typeLabel = docTypeOptions.find(opt => opt.code === row.docTypeCode)?.label || '';
-                                      setViewerBase64(base64);
-                                      setViewerMime(row.file.type);
-                                      setViewerTitle(typeLabel);
-                                      setViewerOpen(true);
-                                    } catch (error) {
-                                      setAlert({ open: true, message: "Impossible de prévisualiser ce fichier", severity: 'error' });
-                                    }
-                                  }}
-                                >
-                                  <VisibilityIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                            <Button component="label" variant="contained" size="small">
-                              Choisir
-                              <input hidden type="file" onChange={(e) => updateDocField(row.id, 'file', e.target.files?.[0] || null)} />
-                            </Button>
-                          </Stack>
-                        </InputAdornment>
-                      )
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Autocomplete
-                    options={docTypeOptions}
-                    getOptionLabel={(o) => o?.label || ''}
-                    value={(docTypeOptions || []).find((opt) => opt.code === row.docTypeCode) || null}
-                    onChange={(_e, v) => updateDocField(row.id, 'docTypeCode', v?.code || '')}
-                    loading={loadingDocTypes}
-                    renderInput={(params) => <TextField {...params} size="small" label="Type de fichier" />}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth size="small" label="Description"
-                    value={row.docDescription || ''}
-                    onChange={(e) => updateDocField(row.id, 'docDescription', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} md={1}>
-                  <RoundIconButton
-                    color="error"
-                    onClick={() => removeDocRow(row.id)}
-                    aria-label="remove-row"
-                    disabled={(values.documents || []).length <= 1}
-                  >
-                    <RemoveCircleOutlineIcon />
-                  </RoundIconButton>
-                </Grid>
-              </Grid>
-            </Grid>
-          ))}
-          <Grid item xs={12}>
-            <Button startIcon={<AddCircleOutlineIcon />} onClick={addDocRow} size="small">
-              Ajouter une pièce
-            </Button>
-          </Grid>
-        </Grid>
+        <GenericDocumentAttachmentManager
+          documents={values.documents}
+          onChange={(docs) => setField('documents', docs)}
+          docTypeOptions={docTypeOptions}
+          loadingDocTypes={loadingDocTypes}
+        />
       </LabeledFrame>
     </Box>
   );
